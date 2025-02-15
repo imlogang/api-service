@@ -43,7 +43,8 @@ workflows:
   deploy-go-api-service:
     jobs:
       - build-image:
-          context: docker-stuff
+          context: 
+            - docker-stuff
       - deploy-api:
           requires:
             - build-image
