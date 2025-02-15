@@ -1,0 +1,50 @@
+version: 2.1
+jobs:
+  build-image:
+    resource_class: medium
+    machine: 
+      image: ubuntu-2204:current
+    steps:
+      - checkout
+      - run:
+          name: Docker Build
+          command: |
+            export CIRCLE_SHA1=$(echo ${CIRCLE_SHA1} | cut -c 1-5)
+            docker build --build-arg DOCKER_TAG=$CIRCLE_SHA1 -t imlogang/go-api:$CIRCLE_SHA1 .
+      - run: 
+          name: Docker Login
+          command: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      - run:
+          name: Docker Push
+          command: |
+            export CIRCLE_SHA1=$(echo ${CIRCLE_SHA1} | cut -c 1-5)
+            docker push imlogang/go-api:$CIRCLE_SHA1
+
+  deploy-api:
+    resource_class: logan/container-runner
+    docker:
+      - image: cimg/deploy:2023.04.1
+    steps:
+      - run:
+          name: Helm Repo Add
+          command: |
+            helm repo add https://imlogang.github.io/go-api-helm/
+            helm repo update
+      - run: 
+          name: Helm Upgrade
+          command: |
+            export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
+            helm upgrade --install --debug go-api-service go-api-helm/go-api --set image.tag=${CIRCLE_SHA2} --set circleci.pipelineId=<< parameters.pipeline_id >> --set circleci.workflowId=${CIRCLE_WORKFLOW_ID} --set circleci.jobNumber=${CIRCLE_BUILD_NUM} --set secretName=staging-secrets -n go-api -f values.yaml
+      - run: 
+          name: Watch Deployment
+          command: kubectl rollout status -w deployment/go-api -n go-api
+
+workflows:
+  deploy-go-api-service:
+    jobs:
+      - build-image:
+          context: docker-stuff
+      - deploy-api:
+          requires:
+            - build-image
+
