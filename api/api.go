@@ -3,7 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
-	"deluge-api/deluge" 
+	"go-api/deluge" 
 )
 
 // addTorrentHandler handles the HTTP request to add a torrent file

@@ -2,7 +2,7 @@ package main
 import (
 	"log"
 	"net/http"
-	"deluge-api/api"
+	"go-api/api"
 )
 
 func main() {
