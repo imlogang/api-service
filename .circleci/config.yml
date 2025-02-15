@@ -45,7 +45,7 @@ workflows:
     jobs:
       - build-image:
           context: 
-            - docker-stuff
+            - docker_stuff
       - deploy-api:
           requires:
             - build-image
