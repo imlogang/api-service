@@ -29,7 +29,7 @@ jobs:
       - run:
           name: Helm Repo Add
           command: |
-            helm repo add https://imlogang.github.io/go-api-helm/
+            helm repo add go-api-helm https://imlogang.github.io/go-api-helm/
             helm repo update
       - run: 
           name: Helm Upgrade
