@@ -1,0 +1,34 @@
+package httpapi
+
+import (
+	"encoding/json"
+	"net/http"
+	"deluge-api/deluge" 
+)
+
+// addTorrentHandler handles the HTTP request to add a torrent file
+func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse query parameters for torrent file path and download directory
+	torrentPath := r.URL.Query().Get("torrentPath")
+	downloadDir := r.URL.Query().Get("downloadDir")
+
+	// Call the AddTorrentFile function from the deluge package
+	result, err := deluge.AddTorrentFile(torrentPath, downloadDir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return the result as JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello, World!"))
+}
+
+func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	// You can add more complex logic here, like checking DB or external services.
+	w.WriteHeader(http.StatusOK)
+}
