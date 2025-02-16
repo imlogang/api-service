@@ -80,8 +80,6 @@ func AddHostAndConnect() error {
 		Method:   "web.add_host",
 		Params:   []interface{}{delugeURL, username, password},
 		ID:       1,
-		Username: username,
-		Password: password,
 	}
 
 	reqBody, err = json.Marshal(addHostReq)
