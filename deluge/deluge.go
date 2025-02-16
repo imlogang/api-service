@@ -39,7 +39,7 @@ func AddTorrentFile(torrentPath string, downloadDir string) (interface{}, error)
 	}
 
 	// Send the request to the Deluge server
-	resp, err := http.Post("http://deluge.logangodsey.com:8112/json", "application/json", bytes.NewBuffer(reqBody))
+	resp, err := http.Post("https://deluge.logangodsey.com/json", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("error sending request to Deluge: %w", err)
 	}
