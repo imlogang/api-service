@@ -10,10 +10,9 @@ import (
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse query parameters for torrent file path and download directory
 	torrentPath := r.URL.Query().Get("torrentPath")
-	downloadDir := r.URL.Query().Get("downloadDir")
 
 	// Call the AddTorrentFile function from the deluge package
-	result, err := deluge.AddTorrentFile(torrentPath, downloadDir)
+	result, err := deluge.AddTorrentFile(torrentPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

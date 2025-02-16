@@ -23,12 +23,12 @@ type JsonRpcResponse struct {
 	ID     int         `json:"id"`
 }
 
-func AddTorrentFile(torrentPath string, downloadDir string) (interface{}, error) {
+func AddTorrentFile(torrentPath string) (interface{}, error) {
 	// Define the JSON-RPC request
 	req := JsonRpcRequest{
 		Jsonrpc: "2.0",
-		Method:  "core.add_torrent_file",
-		Params:  []interface{}{torrentPath, downloadDir},
+		Method:  "json_api.web.download_torrent_from_url",
+		Params:  []interface{}{torrentPath},
 		ID:      1,
 	}
 
