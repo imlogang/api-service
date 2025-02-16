@@ -141,15 +141,22 @@ func AuthAndDownloadTorrent(torrentPath string) (interface{}, error) {
 	addTorrentReq := JsonRpcRequest{
 		Jsonrpc: "2.0",
 		Method:  "web.add_torrents",
-		Params:  []interface{}{
-			map[string]interface{}{"path": torrentFilePath},
+		Params: []interface{}{
+			[]interface{}{ 
+				map[string]interface{}{ 
+					"path": torrentFilePath, 
+					"options": map[string]interface{}{
+						"file_priorities": []int{1, 1, 1, 1, 1}, 
+						"add_paused":     false,
+					},
+				},
+			},
 		},
-		ID:      3, // New ID for the add_torrents request
+		ID:       3, 
 		Username: username,
 		Password: password,
 	}
 	
-
 	// Marshal the add torrent request to JSON
 	reqBody, err = json.Marshal(addTorrentReq)
 	if err != nil {
