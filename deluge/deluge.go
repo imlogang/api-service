@@ -41,7 +41,7 @@ func AddHostAndConnect() error {
 	authReq := JsonRpcRequest{
 		Jsonrpc:  "2.0",
 		Method:   "auth.login",
-		Params:   []interface{}{username, password},
+		Params:   []interface{}{password},
 		ID:       1,
 	}
 
@@ -78,7 +78,7 @@ func AddHostAndConnect() error {
 	addHostReq := JsonRpcRequest{
 		Jsonrpc:  "2.0",
 		Method:   "web.add_host",
-		Params:   []interface{}{username, password},
+		Params:   []interface{}{password},
 		ID:       1,
 		Username: username,
 		Password: password,
