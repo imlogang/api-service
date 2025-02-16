@@ -6,18 +6,27 @@ import (
 	"go-api/deluge" 
 )
 
+type TorrentRequest struct {
+	TorrentPath string `json:"torrentPath"`
+}
+
 // addTorrentHandler handles the HTTP request to add a torrent file
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse query parameters for torrent magnet link
-	torrentPath := r.URL.Query().Get("torrentPath")
+	// Parse the JSON request body
+	var req TorrentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
 
-	if torrentPath == "" {
+	// Ensure the torrentPath is provided
+	if req.TorrentPath == "" {
 		http.Error(w, "Torrent path is required", http.StatusBadRequest)
 		return
 	}
 
 	// Call the AuthAndDownloadTorrent function from the deluge package
-	result, err := deluge.AuthAndDownloadTorrent(torrentPath)
+	result, err := deluge.AuthAndDownloadTorrent(req.TorrentPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
