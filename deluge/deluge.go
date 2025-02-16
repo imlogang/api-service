@@ -134,6 +134,52 @@ func AuthAndDownloadTorrent(torrentPath string) (interface{}, error) {
 		return nil, fmt.Errorf("error downloading torrent: %v", jsonResponse.Error)
 	}
 
-	// Return the result (torrent path)
+	// Step 1: Get the path of the downloaded torrent
+	torrentFilePath := jsonResponse.Result.(string)
+
+	// Step 2: Add the downloaded torrent to Deluge using web.add_torrents
+	addTorrentReq := JsonRpcRequest{
+		Jsonrpc: "2.0",
+		Method:  "web.add_torrents",
+		Params:  []interface{}{
+			map[string]interface{}{"path": torrentFilePath},
+		},
+		ID:      3, // New ID for the add_torrents request
+		Username: username,
+		Password: password,
+	}
+	
+
+	// Marshal the add torrent request to JSON
+	reqBody, err = json.Marshal(addTorrentReq)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling add torrent request: %w", err)
+	}
+
+	// Send the request to add the torrent to Deluge
+	resp, err = client.Post("https://deluge.logangodsey.com/json", "application/json", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("error sending add torrent request to Deluge: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading add torrent response: %w", err)
+	}
+
+	// Parse the add torrent response
+	err = json.Unmarshal(body, &jsonResponse)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling add torrent response: %w", err)
+	}
+
+	// Check if there is an error in the response
+	if jsonResponse.Error != nil {
+		return nil, fmt.Errorf("deluge API error: %v", jsonResponse.Error)
+	}
+
+	// Return the result (torrent added successfully)
 	return jsonResponse.Result, nil
 }
