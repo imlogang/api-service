@@ -19,12 +19,6 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ensure the torrentPath is provided
-	if req.TorrentPath == "" {
-		http.Error(w, "Torrent path is required", http.StatusBadRequest)
-		return
-	}
-
 	// Call the AuthAndDownloadTorrent function from the deluge package
 	result, err := deluge.AuthAndDownloadTorrent(req.TorrentPath)
 	if err != nil {
