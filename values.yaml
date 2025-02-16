@@ -5,4 +5,4 @@ circleci:
   project_id: "8dbb4c7a-8584-43b3-8c8f-41cc33ce243e"
 
 nameOverride: "go-api-service"
-secretName: "go-api-secrets "
+secretName: "go-api-secrets"
