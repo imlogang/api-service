@@ -13,7 +13,7 @@ import (
 type JsonRpcRequest struct {
 	Jsonrpc  string        `json:"jsonrpc"`
 	Method   string        `json:"method"`
-	Params   []interface{} `json:"params"`
+	Params   interface{}    `json:"params"`
 	ID       int           `json:"id"`
 	Username string        `json:"username,omitempty"`
 	Password string        `json:"password,omitempty"`
@@ -41,7 +41,7 @@ func AddHostAndConnect() error {
 	authReq := JsonRpcRequest{
 		Jsonrpc:  "2.0",
 		Method:   "auth.login",
-		Params:   []interface{}{password},
+		Params:   []interface{}{username, password},
 		ID:       1,
 	}
 
