@@ -4,16 +4,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"io"
+	"net/http"
+	"os"
+	"log"
 )
 
 // Struct for the JSON-RPC request
 type JsonRpcRequest struct {
-	Jsonrpc string        `json:"jsonrpc"`
-	Method  string        `json:"method"`
-	Params  []interface{} `json:"params"`
-	ID      int           `json:"id"`
+	Jsonrpc  string        `json:"jsonrpc"`
+	Method   string        `json:"method"`
+	Params   []interface{} `json:"params"`
+	ID       int           `json:"id"`
+	username string        `json:"username`
+	password string        `json:"password"`
 }
 
 // Struct for the JSON-RPC response
@@ -24,12 +28,22 @@ type JsonRpcResponse struct {
 }
 
 func AddTorrentFile(torrentPath string) (interface{}, error) {
+	
+	username := os.Getenv("USERNAME")
+	password := os.Getenv("PASSWORD")
+
+	if username == "" || password == "" {
+        log.Fatal("USERNAME or PASSWORD environment variables not set")
+    }
+
 	// Define the JSON-RPC request
 	req := JsonRpcRequest{
-		Jsonrpc: "2.0",
-		Method:  "web.download_torrent_from_url",
-		Params:  []interface{}{torrentPath},
-		ID:      1,
+		Jsonrpc:  "2.0",
+		Method:   "web.download_torrent_from_url",
+		Params:   []interface{}{torrentPath},
+		ID:       1,
+		username: username,
+		password: password,
 	}
 
 	// Marshal the request to JSON
