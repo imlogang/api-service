@@ -27,9 +27,9 @@ type JsonRpcResponse struct {
 }
 
 var delugeURL = "https://deluge.logangodsey.com/json" // Update this with your Deluge API URL
+var hostID string
 
 func AddHostAndConnect() error {
-	// Retrieve username and password from environment variables
 	username := os.Getenv("USERNAME")
 	password := os.Getenv("PASSWORD")
 
@@ -37,85 +37,86 @@ func AddHostAndConnect() error {
 		return fmt.Errorf("USERNAME or PASSWORD environment variables not set")
 	}
 
-	// Define the JSON-RPC request to add a host
-	addHostReq := JsonRpcRequest{
+	// Step 1: Authenticate with Deluge
+	authReq := JsonRpcRequest{
 		Jsonrpc:  "2.0",
-		Method:   "web.add_host",
-		Params:   []interface{}{"https://deluge.logangodsey.com/json", username, password}, // Replace 127.0.0.1 with your Deluge host IP
+		Method:   "auth.login",
+		Params:   []interface{}{username, password},
 		ID:       1,
-		Username: username,
-		Password: password,
 	}
 
-	reqBody, err := json.Marshal(addHostReq)
+	reqBody, err := json.Marshal(authReq)
 	if err != nil {
-		return fmt.Errorf("error marshaling add host request: %w", err)
+		return fmt.Errorf("error marshaling auth request: %w", err)
 	}
 
-	// Send the request to the Deluge server
-	resp, err := http.Post(delugeURL, "application/json", bytes.NewBuffer(reqBody))
+	// Send the authentication request
+	resp, err := http.Post("https://deluge.logangodsey.com/json", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
-		return fmt.Errorf("error sending add host request: %w", err)
+		return fmt.Errorf("error sending auth request to Deluge: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("error reading add host response: %w", err)
+		return fmt.Errorf("error reading response: %w", err)
 	}
 
-	// Parse the response
-	var jsonResponse JsonRpcResponse
-	err = json.Unmarshal(body, &jsonResponse)
+	var authResponse JsonRpcResponse
+	err = json.Unmarshal(body, &authResponse)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling add host response: %w", err)
+		return fmt.Errorf("error unmarshaling auth response: %w", err)
 	}
 
-	// Check for errors
-	if jsonResponse.Error != nil {
-		return fmt.Errorf("add host error: %v", jsonResponse.Error)
+	// Check for authentication error
+	if authResponse.Error != nil {
+		return fmt.Errorf("authentication failed: %v", authResponse.Error)
 	}
 
-	// Now that the host is added, connect to it
-	hostID := jsonResponse.Result // Assuming host ID is returned as the result
-
-	connectReq := JsonRpcRequest{
-		Jsonrpc: "2.0",
-		Method:  "web.connect",
-		Params:  []interface{}{hostID},
-		ID:      2,
+	// Step 2: Add the host after successful authentication
+	addHostReq := JsonRpcRequest{
+		Jsonrpc:  "2.0",
+		Method:   "web.add_host",
+		Params:   []interface{}{"127.0.0.1", username, password},
+		ID:       1,
+		Username: username,
+		Password: password,
 	}
 
-	reqBody, err = json.Marshal(connectReq)
+	reqBody, err = json.Marshal(addHostReq)
 	if err != nil {
-		return fmt.Errorf("error marshaling connect request: %w", err)
+		return fmt.Errorf("error marshaling add host request: %w", err)
 	}
 
-	// Send the connection request to the Deluge server
-	resp, err = http.Post(delugeURL, "application/json", bytes.NewBuffer(reqBody))
+	// Send the add host request
+	resp, err = http.Post("https://deluge.logangodsey.com/json", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
-		return fmt.Errorf("error sending connect request: %w", err)
+		return fmt.Errorf("error sending add host request to Deluge: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Read the response body
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("error reading connect response: %w", err)
+		return fmt.Errorf("error reading response: %w", err)
 	}
 
-	// Parse the response
-	err = json.Unmarshal(body, &jsonResponse)
+	var addHostResponse JsonRpcResponse
+	err = json.Unmarshal(body, &addHostResponse)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling connect response: %w", err)
+		return fmt.Errorf("error unmarshaling add host response: %w", err)
 	}
 
-	// Check if the connection is successful
-	if jsonResponse.Error != nil {
-		return fmt.Errorf("connect error: %v", jsonResponse.Error)
+	// Handle any error from the add_host call
+	if addHostResponse.Error != nil {
+		return fmt.Errorf("add host error: %v", addHostResponse.Error)
 	}
 
+	// Save the host ID for later use
+	hostID = addHostResponse.Result.(string)
+
+	// Successful connection
 	return nil
 }
 

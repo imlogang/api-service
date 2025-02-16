@@ -12,7 +12,7 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse query parameters for torrent file path and download directory
 	torrentPath := r.URL.Query().Get("torrentPath")
 
-	// Call ConnectToDeluge to ensure we are connected before proceeding
+	// Call AddHostAndConnect to ensure we are connected before proceeding
 	err := deluge.AddHostAndConnect()
 	if err != nil {
 		log.Printf("Error connecting to Deluge: %v", err)
