@@ -31,6 +31,7 @@ func AddTorrentFile(torrentPath string) (interface{}, error) {
 	
 	username := os.Getenv("USERNAME")
 	password := os.Getenv("PASSWORD")
+	fmt.Printf("The username is %s", username)
 
 	if username == "" || password == "" {
         log.Fatal("USERNAME or PASSWORD environment variables not set")
@@ -74,7 +75,7 @@ func AddTorrentFile(torrentPath string) (interface{}, error) {
 
 	// Return the result
 	if jsonResponse.Error != nil {
-		return nil, fmt.Errorf("Deluge API error: %v", jsonResponse.Error)
+		return nil, fmt.Errorf("deluge API error: %v", jsonResponse.Error)
 	}
 
 	return jsonResponse.Result, nil
