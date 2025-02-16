@@ -16,8 +16,8 @@ type JsonRpcRequest struct {
 	Method   string        `json:"method"`
 	Params   []interface{} `json:"params"`
 	ID       int           `json:"id"`
-	username string        `json:"username`
-	password string        `json:"password"`
+	Username string        `json:"username"`
+	Password string        `json:"password"`
 }
 
 // Struct for the JSON-RPC response
@@ -42,8 +42,8 @@ func AddTorrentFile(torrentPath string) (interface{}, error) {
 		Method:   "web.download_torrent_from_url",
 		Params:   []interface{}{torrentPath},
 		ID:       1,
-		username: username,
-		password: password,
+		Username: username,
+		Password: password,
 	}
 
 	// Marshal the request to JSON
