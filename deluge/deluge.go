@@ -13,7 +13,7 @@ import (
 type JsonRpcRequest struct {
 	Jsonrpc  string        `json:"jsonrpc"`
 	Method   string        `json:"method"`
-	Params   interface{}    `json:"params"`
+	Params   []interface{} `json:"params"`
 	ID       int           `json:"id"`
 	Username string        `json:"username,omitempty"`
 	Password string        `json:"password,omitempty"`
@@ -78,7 +78,7 @@ func AddHostAndConnect() error {
 	addHostReq := JsonRpcRequest{
 		Jsonrpc:  "2.0",
 		Method:   "web.add_host",
-		Params:   []interface{}{"127.0.0.1", username, password},
+		Params:   []interface{}{username, password},
 		ID:       1,
 		Username: username,
 		Password: password,
