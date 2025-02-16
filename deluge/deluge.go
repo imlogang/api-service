@@ -37,16 +37,11 @@ func AddHostAndConnect() error {
 		return fmt.Errorf("USERNAME or PASSWORD environment variables not set")
 	}
 
-	authParams := map[string]string{
-		"username": username,
-		"password": password,
-	}
-
 	// Step 1: Authenticate with Deluge
 	authReq := JsonRpcRequest{
 		Jsonrpc:  "2.0",
 		Method:   "auth.login",
-		Params:   []interface{}{authParams},
+		Params:   []interface{}{password},
 		ID:       1,
 	}
 
