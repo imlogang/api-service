@@ -10,6 +10,7 @@ func main() {
 	// Define the route for adding a torrent
 	http.HandleFunc("/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/hello", httpapi.HelloWorldHandler)
+	http.HandleFunc("/health", httpapi.HealthCheckHandler)
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")
