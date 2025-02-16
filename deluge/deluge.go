@@ -78,7 +78,7 @@ func AddHostAndConnect() error {
 	addHostReq := JsonRpcRequest{
 		Jsonrpc:  "2.0",
 		Method:   "web.add_host",
-		Params:   []interface{}{password},
+		Params:   []interface{}{delugeURL, username, password},
 		ID:       1,
 		Username: username,
 		Password: password,
