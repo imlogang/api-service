@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"go-api/deluge" 
+	"log"
+	"io/ioutil"
 )
 
 type TorrentRequest struct {
@@ -13,6 +15,15 @@ type TorrentRequest struct {
 // addTorrentHandler handles the HTTP request to add a torrent file
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse the JSON request body
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading body", http.StatusInternalServerError)
+		return
+	}
+
+	// Log the raw request body for debugging purposes
+	log.Printf("Received request body: %s", string(bodyBytes))
+
 	var req TorrentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
