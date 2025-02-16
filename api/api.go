@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"log"
 	"encoding/json"
 	"net/http"
 	"go-api/deluge" 
@@ -9,21 +8,17 @@ import (
 
 // addTorrentHandler handles the HTTP request to add a torrent file
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse query parameters for torrent file path and download directory
+	// Parse query parameters for torrent magnet link
 	torrentPath := r.URL.Query().Get("torrentPath")
 
-	// Call AddHostAndConnect to ensure we are connected before proceeding
-	err := deluge.AddHostAndConnect()
-	if err != nil {
-		log.Printf("Error connecting to Deluge: %v", err)
-		http.Error(w, "Error connecting to Deluge: "+err.Error(), http.StatusInternalServerError)
+	if torrentPath == "" {
+		http.Error(w, "Torrent path is required", http.StatusBadRequest)
 		return
 	}
 
-	// Call the AddTorrentFile function from the deluge package
-	result, err := deluge.AddTorrentFile(torrentPath)
+	// Call the AuthAndDownloadTorrent function from the deluge package
+	result, err := deluge.AuthAndDownloadTorrent(torrentPath)
 	if err != nil {
-		log.Printf("Error adding torrent: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

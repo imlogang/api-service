@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"log"
+	"net/http/cookiejar"
 )
 
 // Struct for the JSON-RPC request
@@ -26,142 +28,112 @@ type JsonRpcResponse struct {
 	ID     int         `json:"id"`
 }
 
-var delugeURL = "https://deluge.logangodsey.com/json" // Update this with your Deluge API URL
-var hostID string
+func createClientWithCookies() (*http.Client, error) {
+	// Create a CookieJar to store cookies
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating cookie jar: %w", err)
+	}
 
-func AddHostAndConnect() error {
+	// Create an HTTP client with the CookieJar
+	client := &http.Client{
+		Jar: jar,
+	}
+
+	return client, nil
+}
+
+func AuthAndDownloadTorrent(torrentPath string) (interface{}, error) {
+	// Get credentials from environment variables
 	username := os.Getenv("USERNAME")
 	password := os.Getenv("PASSWORD")
-
 	if username == "" || password == "" {
-		return fmt.Errorf("USERNAME or PASSWORD environment variables not set")
+		log.Fatal("USERNAME or PASSWORD environment variables not set")
 	}
 
-	// Step 1: Authenticate with Deluge
+	// Create a client with cookie jar to maintain the session
+	client, err := createClientWithCookies()
+	if err != nil {
+		return nil, fmt.Errorf("error creating client: %w", err)
+	}
+
+	// Define the authentication request
 	authReq := JsonRpcRequest{
-		Jsonrpc:  "2.0",
-		Method:   "auth.login",
-		Params:   []interface{}{password},
-		ID:       1,
+		Jsonrpc: "2.0",
+		Method:  "auth.login",
+		Params:  []interface{}{password}, // Only password as the param
+		ID:      1,
 	}
 
+	// Marshal the request to JSON
 	reqBody, err := json.Marshal(authReq)
 	if err != nil {
-		return fmt.Errorf("error marshaling auth request: %w", err)
+		return nil, fmt.Errorf("error marshaling auth request: %w", err)
 	}
 
 	// Send the authentication request
-	resp, err := http.Post("https://deluge.logangodsey.com/json", "application/json", bytes.NewBuffer(reqBody))
+	resp, err := client.Post("https://deluge.logangodsey.com/json", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
-		return fmt.Errorf("error sending auth request to Deluge: %w", err)
+		return nil, fmt.Errorf("error sending auth request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("error reading response: %w", err)
+		return nil, fmt.Errorf("error reading auth response: %w", err)
 	}
 
-	var authResponse JsonRpcResponse
-	err = json.Unmarshal(body, &authResponse)
+	// Parse the authentication response
+	var jsonResponse JsonRpcResponse
+	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling auth response: %w", err)
+		return nil, fmt.Errorf("error unmarshaling auth response: %w", err)
 	}
 
-	// Check for authentication error
-	if authResponse.Error != nil {
-		return fmt.Errorf("authentication failed: %v", authResponse.Error)
+	// Check for authentication errors
+	if jsonResponse.Error != nil {
+		return nil, fmt.Errorf("authentication error: %v", jsonResponse.Error)
 	}
 
-	// Step 2: Add the host after successful authentication
-	addHostReq := JsonRpcRequest{
-		Jsonrpc:  "2.0",
-		Method:   "web.add_host",
-		Params:   []interface{}{"192.168.30.144", 58846, username, password},
-		ID:       1,
+	// Define the request for downloading the torrent
+	torrentReq := JsonRpcRequest{
+		Jsonrpc: "2.0",
+		Method:  "web.download_torrent_from_url",
+		Params:  []interface{}{torrentPath},
+		ID:      2,
 	}
 
-	reqBody, err = json.Marshal(addHostReq)
+	// Marshal the torrent request to JSON
+	reqBody, err = json.Marshal(torrentReq)
 	if err != nil {
-		return fmt.Errorf("error marshaling add host request: %w", err)
+		return nil, fmt.Errorf("error marshaling torrent request: %w", err)
 	}
 
-	// Send the add host request
-	resp, err = http.Post("https://deluge.logangodsey.com/json", "application/json", bytes.NewBuffer(reqBody))
+	// Send the request to download the torrent
+	resp, err = client.Post("https://deluge.logangodsey.com/json", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
-		return fmt.Errorf("error sending add host request to Deluge: %w", err)
+		return nil, fmt.Errorf("error sending download request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Read the response body
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("error reading response: %w", err)
+		return nil, fmt.Errorf("error reading download response: %w", err)
 	}
 
-	var addHostResponse JsonRpcResponse
-	err = json.Unmarshal(body, &addHostResponse)
-	if err != nil {
-		return fmt.Errorf("error unmarshaling add host response: %w", err)
-	}
-
-	// Handle any error from the add_host call
-	if addHostResponse.Error != nil {
-		return fmt.Errorf("add host error: %v", addHostResponse.Error)
-	}
-
-	// Save the host ID for later use
-	hostID = addHostResponse.Result.(string)
-
-	// Successful connection
-	return nil
-}
-
-func AddTorrentFile(torrentPath string) (interface{}, error) {
-	// Add authentication and connection setup first
-	if err := AddHostAndConnect(); err != nil {
-		return nil, fmt.Errorf("failed to authenticate and connect: %w", err)
-	}
-
-	// Now proceed with adding the torrent file
-	req := JsonRpcRequest{
-		Jsonrpc: "2.0",
-		Method:  "web.download_torrent_from_url",
-		Params:  []interface{}{torrentPath},
-		ID:      3,
-	}
-
-	// Marshal the request to JSON
-	reqBody, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling add torrent request: %w", err)
-	}
-
-	// Send the request to the Deluge server
-	resp, err := http.Post(delugeURL, "application/json", bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, fmt.Errorf("error sending add torrent request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response: %w", err)
-	}
-
-	// Parse the JSON-RPC response
-	var jsonResponse JsonRpcResponse
+	// Parse the download response
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling response: %w", err)
+		return nil, fmt.Errorf("error unmarshaling download response: %w", err)
 	}
 
-	// Return the result
+	// Check if there is an error in the response
 	if jsonResponse.Error != nil {
-		return nil, fmt.Errorf("deluge API error: %v", jsonResponse.Error)
+		return nil, fmt.Errorf("error downloading torrent: %v", jsonResponse.Error)
 	}
 
+	// Return the result (torrent path)
 	return jsonResponse.Result, nil
 }
