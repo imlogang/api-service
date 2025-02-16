@@ -5,17 +5,19 @@ import (
 	"net/http"
 	"go-api/deluge" 
 	"log"
-	"io/ioutil"
+	"io"
 )
 
 type TorrentRequest struct {
-	TorrentPath string `json:"torrentPath"`
+	Parameters struct {
+		URL string `json:"url"`
+	} `json:"parameters"`
 }
 
 // addTorrentHandler handles the HTTP request to add a torrent file
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse the JSON request body
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	// Read the request body
+	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading body", http.StatusInternalServerError)
 		return
@@ -24,16 +26,29 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 	// Log the raw request body for debugging purposes
 	log.Printf("Received request body: %s", string(bodyBytes))
 
+	// Initialize the struct to hold the parsed request
 	var req TorrentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+
+	// Parse the JSON request body into the struct
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Call the AuthAndDownloadTorrent function from the deluge package
-	result, err := deluge.AuthAndDownloadTorrent(req.TorrentPath)
+	// Check if the URL is empty and return an error
+	if req.Parameters.URL == "" {
+		http.Error(w, "Torrent URL is required", http.StatusBadRequest)
+		return
+	}
+
+	// Log the parsed torrent URL for debugging purposes
+	log.Printf("Parsed torrent URL: %s", req.Parameters.URL)
+
+	// Call the AddTorrentFile function from the deluge package with the parsed URL
+	result, err := deluge.AuthAndDownloadTorrent(req.Parameters.URL)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error downloading torrent: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
