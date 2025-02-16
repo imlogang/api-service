@@ -1,5 +1,6 @@
 package main
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"go-api/api"
@@ -11,5 +12,6 @@ func main() {
 	http.HandleFunc("/hello", httpapi.HelloWorldHandler)
 
 	// Start the server
+	fmt.Println("Server started on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
