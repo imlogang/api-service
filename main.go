@@ -14,5 +14,6 @@ func main() {
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")
+	fmt.Println("You can also connect via go-api-service.go-api.svc.cluster.local:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
