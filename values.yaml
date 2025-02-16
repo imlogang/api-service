@@ -10,4 +10,4 @@ circleci:
   promotereleaseenabled: "true"
   cancelreleaseenabled: "true"
 
-nameOverride: "go-api"
+nameOverride: "go-api-service"
