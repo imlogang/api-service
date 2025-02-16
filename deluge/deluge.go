@@ -27,7 +27,7 @@ func AddTorrentFile(torrentPath string) (interface{}, error) {
 	// Define the JSON-RPC request
 	req := JsonRpcRequest{
 		Jsonrpc: "2.0",
-		Method:  "json_api.web.download_torrent_from_url",
+		Method:  "web.download_torrent_from_url",
 		Params:  []interface{}{torrentPath},
 		ID:      1,
 	}
