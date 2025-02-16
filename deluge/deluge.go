@@ -188,5 +188,7 @@ func AuthAndDownloadTorrent(torrentPath string) (interface{}, error) {
 	}
 
 	// Return the result (torrent added successfully)
+	fmt.Println(jsonResponse.Result)
+	fmt.Println(jsonResponse.ID)
 	return jsonResponse.Result, nil
 }
