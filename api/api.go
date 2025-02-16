@@ -29,8 +29,8 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 	// Initialize the struct to hold the parsed request
 	var req TorrentRequest
 
-	// Parse the JSON request body into the struct
-	err = json.NewDecoder(r.Body).Decode(&req)
+	// Decode the JSON request body into the struct using the read bytes
+	err = json.Unmarshal(bodyBytes, &req)
 	if err != nil {
 		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
