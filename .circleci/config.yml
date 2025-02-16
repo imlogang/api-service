@@ -36,7 +36,7 @@ jobs:
           name: Helm Upgrade
           command: |
             export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
-            helm upgrade --install --debug go-api-service go-api-helm/go-api --set image.tag=${CIRCLE_SHA2} --set circleci.pipelineId=<< pipeline.id >> --set circleci.workflowId=${CIRCLE_WORKFLOW_ID} --set circleci.jobNumber=${CIRCLE_BUILD_NUM} --set secretName=staging-secrets -n go-api -f values.yaml
+            helm upgrade --install --debug go-api-service go-api-helm/go-api --set image.tag=${CIRCLE_SHA2} --set circleci.pipelineId=<< pipeline.id >> --set circleci.workflowId=${CIRCLE_WORKFLOW_ID} --set circleci.jobNumber=${CIRCLE_BUILD_NUM} -n go-api -f values.yaml
       - run: 
           name: Watch Deployment
           command: kubectl rollout status -w deployment/go-api-service -n go-api
