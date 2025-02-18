@@ -45,7 +45,7 @@ jobs:
 
   release-go-api-service:
     type: release
-    plan_name: go-api-service
+    plan_name: release-go-api-service
 
 workflows:
   deploy-go-api-service:
