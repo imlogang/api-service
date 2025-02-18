@@ -38,8 +38,14 @@ jobs:
             export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
             helm upgrade --install --debug go-api-service go-api-helm/go-api --set image.tag=${CIRCLE_SHA2} --set circleci.pipelineId=<< pipeline.id >> --set circleci.workflowId=${CIRCLE_WORKFLOW_ID} --set circleci.jobNumber=${CIRCLE_BUILD_NUM} -n go-api -f values.yaml
       - run: 
-          name: Watch Deployment
-          command: kubectl rollout status -w deployment/go-api-service -n go-api
+          name: Watch release
+          command: |
+            export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
+            circleci run release plan --environment-name="Microk8s Cluster" --component-name=go-api-service --target-version=${CIRCLE_SHA2} release-go-api-service
+
+  release-go-api-service:
+    type: release
+    plan_name: go-api
 
 workflows:
   deploy-go-api-service:
@@ -50,4 +56,7 @@ workflows:
       - deploy-api:
           requires:
             - build-image
+      - release-go-api-service:
+          requires:
+            - deploy-api
 
