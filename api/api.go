@@ -16,12 +16,13 @@ type TorrentRequest struct {
 
 // addTorrentHandler handles the HTTP request to add a torrent file
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
-	// Read the request body
+	// Read the request body and check for errors
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading body", http.StatusInternalServerError)
 		return
 	}
+	defer r.Body.Close() // Close the body after reading to avoid resource leak
 
 	// Log the raw request body for debugging purposes
 	log.Printf("Received request body: %s", string(bodyBytes))
@@ -52,20 +53,37 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return the result as JSON
+	// Return the result as JSON and check for any error during encoding
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, "Failed to encode response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
+
 
 func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello, World!"))
+	// Write the response and check for any error, but discard 'n' as it's not needed
+	_, err := w.Write([]byte("Hello, World!"))
+	if err != nil {
+		// If there is an error, return an internal server error response
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
 }
 
+//Health check for k8s
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	// You can add more complex logic here, like checking DB or external services.
 	w.WriteHeader(http.StatusOK)
 }
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "This is my website!\n")
+	// Write the string and check for any error
+	_, err := io.WriteString(w, "This is my website!\n")
+	if err != nil {
+		// If there is an error, return an internal server error response
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
 }
