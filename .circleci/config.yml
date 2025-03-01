@@ -50,6 +50,7 @@ jobs:
   test:
     docker:
       - image: cimg/go:1.23
+    parallelism: 2
     resource_class: medium
     steps:
       - checkout
