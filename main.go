@@ -11,6 +11,8 @@ func main() {
 	http.HandleFunc("/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
+	http.HandleFunc("/root", httpapi.GetRoot)
+	http.Handle("/", http.FileServer(http.Dir("./website")))
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")

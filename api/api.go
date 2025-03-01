@@ -65,3 +65,7 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	// You can add more complex logic here, like checking DB or external services.
 	w.WriteHeader(http.StatusOK)
 }
+
+func GetRoot(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "This is my website!\n")
+}
