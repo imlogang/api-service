@@ -68,7 +68,7 @@ jobs:
       - checkout
       - run: 
           name: install golangci-lint
-          command: sudo apt-get update && sudo apt-get install golangci-lint -y
+          command: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.5
       - run: 
           name: lint
           command: golangci-lint run
