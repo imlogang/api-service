@@ -12,10 +12,10 @@ func main() {
 	http.HandleFunc("/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
 	http.HandleFunc("/root", httpapi.GetRoot)
-	http.Handle("/", http.FileServer(http.Dir("./website")))
 	http.HandleFunc("/resume", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./website/resume.html")
 	})
+	http.Handle("/", http.FileServer(http.Dir("./website")))
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")
