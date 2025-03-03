@@ -8,5 +8,6 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /
 COPY --from=builder /go-api-service /go-api-service
+COPY /website /website
 EXPOSE 8080
 ENTRYPOINT ["/go-api-service"]
