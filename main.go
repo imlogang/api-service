@@ -15,6 +15,9 @@ func main() {
 	http.HandleFunc("/resume", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./website/resume.html")
 	})
+	http.HandleFunc("/blog", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./website/blog/blog.html")
+	})
 	http.Handle("/", http.FileServer(http.Dir("./website")))
 
 	// Start the server
