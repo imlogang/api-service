@@ -84,9 +84,21 @@ workflows:
           requires:
             - test
             - lint
+          filters:
+            branches:
+              only:
+                - main
       - deploy-api:
           requires:
             - build-image
+          filters:
+            branches:
+              only:
+                - main
       - release-go-api-service:
           requires:
             - deploy-api
+          filters:
+            branches:
+              only:
+                - main
