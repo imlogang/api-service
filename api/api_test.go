@@ -9,7 +9,7 @@ import (
 // Test HelloWorldHandler
 func TestHelloWorldHandler(t *testing.T) {
 	// Create a request to pass to the handler
-	req, err := http.NewRequest("GET", "/hello", nil)
+	req, err := http.NewRequest("GET", "/api/private/hello", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
