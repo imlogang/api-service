@@ -8,10 +8,10 @@ import (
 
 func main() {
 	// Define the route for adding a torrent
-	http.HandleFunc("/add_torrent", httpapi.AddTorrentHandler)
-	http.HandleFunc("/hello", httpapi.HelloWorldHandler)
+	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
+	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
-	http.HandleFunc("/root", httpapi.GetRoot)
+	http.HandleFunc("/api/private/root", httpapi.GetRoot)
 	http.HandleFunc("/resume", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./website/resume.html")
 	})
