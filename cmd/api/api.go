@@ -2,13 +2,10 @@ package httpapi
 
 import (
 	"encoding/json"
-	"fmt"
 	"go-api/cmd/deluge"
 	"io"
 	"log"
 	"net/http"
-	"os"
-	"database/sql"
 )
 
 type TorrentRequest struct {
@@ -89,33 +86,4 @@ func GetRoot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 		return
 	}
-}
-
-func TestDBConnection(db *sql.DB) error {
-	// Read environment variables
-	postgresHost := os.Getenv("POSTGRES_HOST")
-	postgresPort := os.Getenv("POSTGRES_PORT")
-	postgresUser := os.Getenv("POSTGRES_USER")
-	postgresPassword := os.Getenv("POSTGRES_PASSWORD")
-	postgresDB := os.Getenv("POSTGRES_DB")
-
-	// Connection string
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", 
-		postgresHost, postgresPort, postgresUser, postgresPassword, postgresDB)
-
-	// Open a connection to the database
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal("Error opening connection to the database:", err)
-	}
-	defer db.Close()
-
-	// Test the connection
-	err = db.Ping()
-	if err != nil {
-		log.Fatal("Error connecting to the database:", err)
-	} else {
-		fmt.Println("Successfully connected to the database!")
-	}
-	return err
 }

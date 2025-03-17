@@ -1,8 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"go-api/cmd/api"
+	"go-api/cmd/db"
 	"log"
 	"net/http"
 )
@@ -21,7 +23,7 @@ func main() {
 	})
 	http.Handle("/", http.FileServer(http.Dir("./website")))
 
-	err := httpapi.TestDBConnection(db)
+	err := db.TestDBConnection()
 	if err != nil {
 		log.Fatal("Error testing DB connection:", err)
 		return
