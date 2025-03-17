@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"go-api/cmd/api"
 	"go-api/cmd/db"
