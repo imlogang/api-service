@@ -20,11 +20,6 @@ postgresql:
   postgresqlDatabase: beemoviebot
   auth:
     enablePostgresUser: true
-    postgresPassword:
-      valueFrom:
-        secretKeyRef:
-          name: go-api-service-postgresql
-          key: postgres-password
     database: beemoviebot
   service:
     type: ClusterIP
