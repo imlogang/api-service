@@ -14,3 +14,9 @@ resources:
   requests:
     cpu: 500m
     memory: 512Mi
+
+postgresql:
+  postgresqlUsername: postgres
+  postgresqlDatabase: beemoviebot
+  service:
+    type: ClusterIP
