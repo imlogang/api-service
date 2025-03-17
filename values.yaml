@@ -18,6 +18,7 @@ resources:
 postgresql:
   postgresqlUsername: postgres
   postgresqlDatabase: beemoviebot
+  database: beemoviebot
   service:
     type: ClusterIP
   postgresqlPassword: 
