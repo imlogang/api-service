@@ -19,14 +19,15 @@ postgresql:
   postgresqlUsername: postgres
   postgresqlDatabase: beemoviebot
   auth:
+    enablePostgresUser: true
+    postgresPassword:
+      valueFrom:
+        secretKeyRef:
+          name: go-api-service-postgresql
+          key: postgres-password
     database: beemoviebot
   service:
     type: ClusterIP
-  postgresqlPassword: 
-    valueFrom:
-      secretKeyRef:
-        name: go-api-secrets
-        key: POSTGRES_PASSWORD
   secretName: go-api-service-postgresql
   statefulset:
-    name: postgresql-0
+    fullnameOverride: postgresql-0
