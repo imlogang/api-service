@@ -117,4 +117,5 @@ func TestDBConnection(db *sql.DB) error {
 	} else {
 		fmt.Println("Successfully connected to the database!")
 	}
+	return err
 }

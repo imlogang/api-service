@@ -21,10 +21,12 @@ func main() {
 	})
 	http.Handle("/", http.FileServer(http.Dir("./website")))
 
-	err = api.TestDBConnection(db)
+	err := httpapi.TestDBConnection(db)
 	if err != nil {
 		log.Fatal("Error testing DB connection:", err)
 		return
+	} else {
+		fmt.Println("Database connection succesfull.")
 	}
 
 	// Start the server
