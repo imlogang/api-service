@@ -15,12 +15,14 @@ resources:
     cpu: 500m
     memory: 512Mi
 
+global:
+  postgresql:
+    auth:
+      database: "dvdrental"
+
 postgresql:
   postgresqlUsername: postgres
   postgresqlDatabase: beemoviebot
-  auth:
-    enablePostgresUser: true
-    database: beemoviebot
   service:
     type: ClusterIP
   secretName: go-api-service-postgresql
