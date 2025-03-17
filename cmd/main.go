@@ -1,9 +1,10 @@
 package main
+
 import (
 	"fmt"
+	"go-api/cmd/api"
 	"log"
 	"net/http"
-	"go-api/cmd/api"
 )
 
 func main() {
@@ -19,6 +20,12 @@ func main() {
 		http.ServeFile(w, r, "./website/blog/blog.html")
 	})
 	http.Handle("/", http.FileServer(http.Dir("./website")))
+
+	err = api.TestDBConnection(db)
+	if err != nil {
+		log.Fatal("Error testing DB connection:", err)
+		return
+	}
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")
