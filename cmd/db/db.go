@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
 type Config struct {
@@ -45,4 +46,9 @@ func (c *Config) TestDBConnection() error {
 		fmt.Println("Successfully connected to the database!")
 	}
 	return err
+}
+
+//nolint:unused,empty
+func AddEntry() {
+	return
 }
