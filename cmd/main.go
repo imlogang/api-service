@@ -22,7 +22,8 @@ func main() {
 	})
 	http.Handle("/", http.FileServer(http.Dir("./website")))
 
-	err := db.TestDBConnection()
+	config := db.LoadConfig()
+	err := config.TestDBConnection()
 	if err != nil {
 		log.Fatal("Error testing DB connection:", err)
 		return

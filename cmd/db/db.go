@@ -25,7 +25,7 @@ func LoadConfig() Config {
 	}
 }
 
-func (c Config) TestDBConnection() error {
+func (c *Config) TestDBConnection() error {
 	// Connection string
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", 
 		c.Host, c.Port, c.User, c.Password, c.DB)
