@@ -2,10 +2,12 @@ package httpapi
 
 import (
 	"encoding/json"
+	"go-api/cmd/db"
 	"go-api/cmd/deluge"
 	"io"
 	"log"
 	"net/http"
+	"fmt"
 )
 
 type TorrentRequest struct {
@@ -86,4 +88,25 @@ func GetRoot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 		return
 	}
+}
+
+func ListTablesAPI(w http.ResponseWriter, r *http.Request) {
+    // Ensure db.DB is initialized
+    if db.DB == nil {
+        http.Error(w, "Database connection not established", http.StatusInternalServerError)
+        return
+    }
+
+    // Call ListTables with the db.DB connection
+    tables, err := db.ListTables(db.DB)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Error listing tables: %v", err), http.StatusInternalServerError)
+        return
+    }
+
+    // Return the tables as a JSON response
+    w.Header().Set("Content-Type", "application/json")
+    if err := json.NewEncoder(w).Encode(tables); err != nil {
+        http.Error(w, fmt.Sprintf("Failed to encode tables: %v", err), http.StatusInternalServerError)
+    }
 }

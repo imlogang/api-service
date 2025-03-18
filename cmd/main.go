@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-api/cmd/api"
+	httpapi "go-api/cmd/api"
 	"go-api/cmd/db"
 	"log"
 	"net/http"
@@ -30,6 +31,7 @@ func main() {
 	} else {
 		fmt.Println("Database connection succesfull.")
 	}
+	http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")
