@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/jackc/pgx/"
+	"github.com/jackc/pgx"
 	_ "github.com/lib/pq"
 )
 
@@ -51,9 +51,4 @@ func (c *Config) TestDBConnection() error {
 		fmt.Println("Successfully connected to the database!")
 	}
 	return err
-}
-
-//nolint:unused,empty
-func AddEntry() {
-	return
 }
