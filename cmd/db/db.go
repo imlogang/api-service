@@ -28,7 +28,7 @@ func LoadConfig() Config {
 func TestDBConnection(c Config) error {
 	// Connection string
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", 
-		c.Host, c.port, c.user, c.password, c.DB)
+		c.Host, c.Port, c.User, c.Password, c.DB)
 
 	// Open a connection to the database
 	db, err := sql.Open("postgres", connStr)
