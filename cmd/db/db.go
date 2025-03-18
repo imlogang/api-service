@@ -47,8 +47,3 @@ func (c *Config) TestDBConnection() error {
 	}
 	return err
 }
-
-//nolint:unused,empty
-func AddEntry() {
-	return
-}
