@@ -37,7 +37,11 @@ func (c *Config) TestDBConnection() error {
 
 	// Open a connection to the database
 	//db, err := sql.Open("postgres", connStr)
-	conn, err := pgx.Connect(context.Background(), connStr)
+	connectionConfig, err := pgx.ParseConnectionString(connStr)
+	if err != nil {
+		log.Fatalf("Failed to parse connection string: %v\n", err)
+	}
+	conn, err := pgx.Connect(connectionConfig)
 	if err != nil {
 		log.Fatal("Error opening connection to the database:", err)
 	}
