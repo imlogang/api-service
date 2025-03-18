@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"go-api/cmd/api"
-	httpapi "go-api/cmd/api"
 	"go-api/cmd/db"
 	"log"
 	"net/http"
