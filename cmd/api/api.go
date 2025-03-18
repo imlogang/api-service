@@ -91,13 +91,6 @@ func GetRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListTablesAPI(w http.ResponseWriter, r *http.Request) {
-    // Ensure db.DB is initialized
-    if db.DB == nil {
-        http.Error(w, "Database connection not established", http.StatusInternalServerError)
-        return
-    }
-
-    // Call ListTables with the db.DB connection
     tables, err := db.ListTables(db.DB)
     if err != nil {
         http.Error(w, fmt.Sprintf("Error listing tables: %v", err), http.StatusInternalServerError)
