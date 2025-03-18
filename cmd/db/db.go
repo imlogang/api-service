@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	_ "github.com/lib/pq" // PostgreSQL driver
+	_ "github.com/lib/pq"
 )
 
 type Config struct {
