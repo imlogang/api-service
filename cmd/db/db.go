@@ -101,6 +101,11 @@ func CreateTable(conn *pgx.Conn, tableName string) (string, error) {
 		return "", fmt.Errorf("the table name must not be empty")
 	}
 
-	sql := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s`, tableName)
-	return sql, nil
+	sql := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (id SERIAL PRIMARY KEY, name TEXT);`, tableName)
+	_, err := conn.Exec(sql)
+	if err != nil {
+		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
+	}
+
+	return fmt.Sprintf(`%s succesfully created.`, tableName), nil
 }
