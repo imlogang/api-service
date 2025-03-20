@@ -57,7 +57,7 @@ jobs:
       - run:
           name: run all tests
           command: |
-            go list ./... | grep -v '^go-api/cmd' | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname --" --split-by=timings --timings-type=name
+            go list ./cmd/... | grep -v '^go-api/cmd' | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname --" --split-by=timings --timings-type=name
       - store_test_results:
           path: junit.xml
   
@@ -91,6 +91,7 @@ workflows:
       - deploy-api:
           requires:
             - build-image
+          serial-group: << pipeline.project.slug >>/deploy-group
           filters:
             branches:
               only:
