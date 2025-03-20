@@ -31,6 +31,7 @@ func main() {
 		fmt.Println("Database connection succesfull.")
 	}
 	http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
+	http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")

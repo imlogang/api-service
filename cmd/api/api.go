@@ -103,3 +103,22 @@ func ListTablesAPI(w http.ResponseWriter, r *http.Request) {
         http.Error(w, fmt.Sprintf("Failed to encode tables: %v", err), http.StatusInternalServerError)
     }
 }
+
+func CreateTableAPI(w http.ResponseWriter, r *http.Request) {
+	var requestBody struct {
+		TableName string `json:"table_name"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	sql, err := db.CreateTable(nil, requestBody.TableName)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"sql": sql})
+}

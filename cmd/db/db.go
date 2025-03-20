@@ -90,5 +90,17 @@ func ListTables(conn *pgx.Conn) ([]string, error) {
         return nil, fmt.Errorf("error iterating over rows: %v", err)
     }
 
+	if tableNames == nil {
+		return nil, fmt.Errorf("there are no tables in the database")
+	}
     return tableNames, nil
+}
+
+func CreateTable(conn *pgx.Conn, tableName string) (string, error) {
+	if tableName == "" {
+		return "", fmt.Errorf("the table name must not be empty")
+	}
+
+	sql := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s`, tableName)
+	return sql, nil
 }
