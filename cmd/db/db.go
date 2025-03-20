@@ -122,3 +122,22 @@ func CreateTable(tableName string) (string, error) {
 	defer DB.Close()
 	return fmt.Sprintf(`%s succesfully created.`, tableName), nil
 }
+
+func DeleteTable(tableName string) (string, error) {
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		log.Fatal("Error testing DB connection:", err)
+	}
+	if tableName == "" {
+		return "", fmt.Errorf("the table name must not be empty")
+	}
+	sql := fmt.Sprintf(`DROP TABLE %s`, tableName)
+	_, err = DB.Exec(sql)
+	if err != nil {
+		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
+	}
+
+	defer DB.Close()
+	return fmt.Sprintf(`%s succesfully deleted.`, tableName), nil
+}
