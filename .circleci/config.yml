@@ -54,6 +54,12 @@ jobs:
     resource_class: medium
     steps:
       - checkout
+      - run: 
+          name: list tests
+          command: |
+            cd cmd && go list ./...
+            go list ./...
+            go list ./cmd/...
       - run:
           name: run all tests
           command: |
