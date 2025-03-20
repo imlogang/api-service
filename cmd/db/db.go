@@ -10,8 +10,6 @@ import (
 	"github.com/jackc/pgx"
 	_ "github.com/lib/pq"
 )
-
-var DB *pgx.Conn
 type Config struct {
 	Host     string
 	Port     string
@@ -55,22 +53,29 @@ func (c *Config) TestDBConnection() error {
 	return err
 }
 
-func (c *Config) Connect() (error) {
+func (c *Config) Connect() (*pgx.Conn, error) {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", c.User, c.Password, c.Host, c.Port, c.DB)
 	connectionConfig, err := pgx.ParseConnectionString(connStr)
 	if err != nil {
 		log.Fatalf("Failed to parse connection string: %v\n", err)
 	}
 	conn, err := pgx.Connect(connectionConfig)
+	if conn == nil {
+		return nil, fmt.Errorf("connection is nil")
+	}
+
 	if err != nil {
 		log.Fatal("Error opening connection to the database:", err)
 	}
-
-	DB = conn
-	return nil
+	return conn, err
 }
 
 func ListTables() ([]string, error) {
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		log.Fatal("Error testing DB connection:", err)
+	}
     var tableNames []string
     sql := `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`
     rows, err := DB.Query(sql)
@@ -99,12 +104,17 @@ func ListTables() ([]string, error) {
 }
 
 func CreateTable(tableName string) (string, error) {
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		log.Fatal("Error testing DB connection:", err)
+	}
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
 	}
 
 	sql := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (id SERIAL PRIMARY KEY, name TEXT);`, tableName)
-	_, err := DB.Exec(sql)
+	_, err = DB.Exec(sql)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
 	}

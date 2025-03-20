@@ -27,9 +27,8 @@ func main() {
 	if err != nil {
 		log.Fatal("Error testing DB connection:", err)
 		return
-	} else {
-		fmt.Println("Database connection succesfull.")
 	}
+	
 	http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
 	http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
 
