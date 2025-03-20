@@ -134,7 +134,7 @@ func DeleteTableAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	sql, err := db.CreateTable(requestBody.TableName)
+	sql, err := db.DeleteTable(requestBody.TableName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
 		return
