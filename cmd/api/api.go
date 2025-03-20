@@ -91,7 +91,7 @@ func GetRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListTablesAPI(w http.ResponseWriter, r *http.Request) {
-    tables, err := db.ListTables(db.DB)
+    tables, err := db.ListTables()
     if err != nil {
         http.Error(w, fmt.Sprintf("Error listing tables: %v", err), http.StatusInternalServerError)
         return
@@ -113,7 +113,7 @@ func CreateTableAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	sql, err := db.CreateTable(nil, requestBody.TableName)
+	sql, err := db.CreateTable(requestBody.TableName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
 		return

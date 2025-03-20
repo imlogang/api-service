@@ -55,7 +55,7 @@ func (c *Config) TestDBConnection() error {
 	return err
 }
 
-func (c *Config) Connect() (*pgx.Conn, error) {
+func (c *Config) Connect() (error) {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", c.User, c.Password, c.Host, c.Port, c.DB)
 	connectionConfig, err := pgx.ParseConnectionString(connStr)
 	if err != nil {
@@ -65,17 +65,19 @@ func (c *Config) Connect() (*pgx.Conn, error) {
 	if err != nil {
 		log.Fatal("Error opening connection to the database:", err)
 	}
-	return conn, nil
+
+	DB = conn
+	return nil
 }
 
-func ListTables(conn *pgx.Conn) ([]string, error) {
+func ListTables() ([]string, error) {
     var tableNames []string
     sql := `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`
-    rows, err := conn.Query(sql)
+    rows, err := DB.Query(sql)
     if err != nil {
         return nil, fmt.Errorf("failed to query tables: %v", err)
     }
-    defer rows.Close()
+    defer DB.Close()
 
     for rows.Next() {
         var tableName string
@@ -96,16 +98,17 @@ func ListTables(conn *pgx.Conn) ([]string, error) {
     return tableNames, nil
 }
 
-func CreateTable(conn *pgx.Conn, tableName string) (string, error) {
+func CreateTable(tableName string) (string, error) {
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
 	}
 
 	sql := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (id SERIAL PRIMARY KEY, name TEXT);`, tableName)
-	_, err := conn.Exec(sql)
+	_, err := DB.Exec(sql)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
 	}
 
+	defer DB.Close()
 	return fmt.Sprintf(`%s succesfully created.`, tableName), nil
 }
