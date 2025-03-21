@@ -16,7 +16,6 @@ type TorrentRequest struct {
 	} `json:"parameters"`
 }
 
-// addTorrentHandler handles the HTTP request to add a torrent file
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the request body and check for errors
 	bodyBytes, err := io.ReadAll(r.Body)
@@ -63,7 +62,13 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
+// @Summary Says hello
+// @Description A simple Hello World endpoint
+// @Tags greetings
+// @Accept json
+// @Produce json
+// @Success 200 {string} string "Hello, World!"
+// @Router /api/private/hello [get]
 func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	// Write the response and check for any error, but discard 'n' as it's not needed
 	_, err := w.Write([]byte("Hello, World!"))
@@ -74,7 +79,14 @@ func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//Health check for k8s
+// @Summary Health check endpoint
+// @Description Check the health status of the API
+// @Tags health
+// @Accept json
+// @Produce json
+// @Success 200 {string} string "OK"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /health [get]
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }

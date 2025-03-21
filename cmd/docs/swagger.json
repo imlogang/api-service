@@ -1,7 +1,69 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "These APIs handle a lot of backend things..",
+        "title": "Logan's API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "logan@logangodsey.com"
+        },
+        "version": "1.0"
     },
-    "paths": {}
+    "host": "api-service.logangodsey.com",
+    "basePath": "/api/private/",
+    "paths": {
+        "/api/private/hello": {
+            "get": {
+                "description": "A simple Hello World endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "greetings"
+                ],
+                "summary": "Says hello",
+                "responses": {
+                    "200": {
+                        "description": "Hello, World!",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Check the health status of the API",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check endpoint",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
