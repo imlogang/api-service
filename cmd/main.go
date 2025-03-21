@@ -4,13 +4,30 @@ import (
 	"fmt"
 	"go-api/cmd/api"
 	"go-api/cmd/db"
+	_ "go-api/cmd/docs"
 	"log"
 	"net/http"
-	_ "go-api/cmd/docs"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/swaggo/http-swagger"
 )
 
+// @title Logan's API
+// @version 1.0
+// @description These APIs handle a lot of backend things..
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.email logan@logangodsey.com
+
+// @host api-service.logangodsey.com
+// @BasePath /api/private/
 func main() {
-	// Define the route for adding a torrent
+	r := chi.NewRouter()
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://api-service.logangodsey.com/swagger/doc.json"),
+	))
+
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
