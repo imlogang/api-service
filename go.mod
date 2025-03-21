@@ -5,16 +5,17 @@ go 1.23.0
 toolchain go1.24.0
 
 require (
+	github.com/go-chi/chi/v5 v5.2.1
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/lib/pq v1.10.9
 	github.com/swaggo/http-swagger v1.3.4
+	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/swaggo/swag v1.16.4
 )
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
-	github.com/go-chi/chi/v5 v5.2.1 // indirect
 	github.com/go-openapi/jsonpointer v0.21.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/spec v0.21.0 // indirect
