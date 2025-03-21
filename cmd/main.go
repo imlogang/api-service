@@ -25,7 +25,7 @@ import (
 func main() {
 	r := chi.NewRouter()
 	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http://api-service.logangodsey.com/swagger/doc.json"),
+		httpSwagger.URL("http://localhost:8080/swagger/swagger.json")
 	))
 
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
