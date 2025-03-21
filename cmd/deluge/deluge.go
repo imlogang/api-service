@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
-	"os"
 	"log"
+	"net/http"
 	"net/http/cookiejar"
+	"os"
 )
 
 // Struct for the JSON-RPC request
@@ -142,21 +142,21 @@ func AuthAndDownloadTorrent(torrentPath string) (interface{}, error) {
 		Jsonrpc: "2.0",
 		Method:  "web.add_torrents",
 		Params: []interface{}{
-			[]interface{}{ 
-				map[string]interface{}{ 
-					"path": torrentFilePath, 
+			[]interface{}{
+				map[string]interface{}{
+					"path": torrentFilePath,
 					"options": map[string]interface{}{
-						"file_priorities": []int{1, 1, 1, 1, 1}, 
-						"add_paused":     false,
+						"file_priorities": []int{1, 1, 1, 1, 1},
+						"add_paused":      false,
 					},
 				},
 			},
 		},
-		ID:       3, 
+		ID:       3,
 		Username: username,
 		Password: password,
 	}
-	
+
 	// Marshal the add torrent request to JSON
 	reqBody, err = json.Marshal(addTorrentReq)
 	if err != nil {

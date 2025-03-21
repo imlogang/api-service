@@ -6,6 +6,7 @@ import (
 	"go-api/cmd/db"
 	"log"
 	"net/http"
+	_ "go-api/cmd/docs"
 )
 
 func main() {
@@ -32,7 +33,7 @@ func main() {
 	http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
 	http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
 	http.HandleFunc("/api/private/delete_table", httpapi.DeleteTableAPI)
-	
+
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")
 	fmt.Println("You can also connect via http://go-api-service.go-api.svc.cluster.local:8080")

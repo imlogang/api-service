@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx"
 	_ "github.com/lib/pq"
 )
+
 type Config struct {
 	Host     string
 	Port     string
@@ -76,31 +77,31 @@ func ListTables() ([]string, error) {
 	if err != nil {
 		log.Fatal("Error testing DB connection:", err)
 	}
-    var tableNames []string
-    sql := `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`
-    rows, err := DB.Query(sql)
-    if err != nil {
-        return nil, fmt.Errorf("failed to query tables: %v", err)
-    }
-    defer DB.Close()
+	var tableNames []string
+	sql := `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`
+	rows, err := DB.Query(sql)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query tables: %v", err)
+	}
+	defer DB.Close()
 
-    for rows.Next() {
-        var tableName string
-        err := rows.Scan(&tableName)
-        if err != nil {
-            return nil, fmt.Errorf("failed to scan row: %v", err)
-        }
-        tableNames = append(tableNames, tableName)
-    }
+	for rows.Next() {
+		var tableName string
+		err := rows.Scan(&tableName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row: %v", err)
+		}
+		tableNames = append(tableNames, tableName)
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, fmt.Errorf("error iterating over rows: %v", err)
-    }
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %v", err)
+	}
 
 	if tableNames == nil {
 		return nil, fmt.Errorf("there are no tables in the database")
 	}
-    return tableNames, nil
+	return tableNames, nil
 }
 
 func CreateTable(tableName string) (string, error) {

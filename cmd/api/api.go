@@ -2,12 +2,12 @@ package httpapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-api/cmd/db"
 	"go-api/cmd/deluge"
 	"io"
 	"log"
 	"net/http"
-	"fmt"
 )
 
 type TorrentRequest struct {
@@ -64,7 +64,6 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	// Write the response and check for any error, but discard 'n' as it's not needed
 	_, err := w.Write([]byte("Hello, World!"))
@@ -91,17 +90,17 @@ func GetRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListTablesAPI(w http.ResponseWriter, r *http.Request) {
-    tables, err := db.ListTables()
-    if err != nil {
-        http.Error(w, fmt.Sprintf("Error listing tables: %v", err), http.StatusInternalServerError)
-        return
-    }
+	tables, err := db.ListTables()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error listing tables: %v", err), http.StatusInternalServerError)
+		return
+	}
 
-    // Return the tables as a JSON response
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(tables); err != nil {
-        http.Error(w, fmt.Sprintf("Failed to encode tables: %v", err), http.StatusInternalServerError)
-    }
+	// Return the tables as a JSON response
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(tables); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode tables: %v", err), http.StatusInternalServerError)
+	}
 }
 
 func CreateTableAPI(w http.ResponseWriter, r *http.Request) {
