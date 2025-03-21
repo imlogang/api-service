@@ -27,7 +27,7 @@ func main() {
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("http://go-api-service.go-api.svc.cluster.local:8080/docs/swagger.json"),
 	))
-
+	http.Handle("/docs/swagger.json", http.StripPrefix("/docs", http.FileServer(http.Dir("./cmd/docs"))))
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
