@@ -143,7 +143,7 @@ func DeleteTable(tableName string) (string, error) {
 	return fmt.Sprintf(`%s succesfully deleted.`, tableName), nil
 }
 
-func UpdateTableWithUser(tableName string, user string,) (string, error) {
+func UpdateTableWithUser(tableName string, username string,) (string, error) {
 	config := LoadConfig()
 	DB, err := config.Connect()
 	if err != nil {
@@ -152,10 +152,10 @@ func UpdateTableWithUser(tableName string, user string,) (string, error) {
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
 	}
-	if user == "" {
+	if username == "" {
 		return "", fmt.Errorf("the user must not be empty")
 	}
-	sql := fmt.Sprintf(`INSERT INTO %s (USER, SCORE) VALUES (%s, 0)`, tableName, user)
+	sql := fmt.Sprintf(`INSERT INTO %s (USERNAME, SCORE) VALUES (%s, 0)`, tableName, username)
 	_, err = DB.Exec(sql)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error updating the table: %s`, err)

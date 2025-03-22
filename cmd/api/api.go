@@ -160,7 +160,7 @@ func DeleteTableAPI(w http.ResponseWriter, r *http.Request) {
 func UpdateTableWithUser(w http.ResponseWriter, r *http.Request) {
 	var requestBody struct {
 		TableName string `json:"table_name"`
-		User      string `json:"user"`
+		User      string `json:"username"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
