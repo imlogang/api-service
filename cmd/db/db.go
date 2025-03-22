@@ -143,29 +143,36 @@ func DeleteTable(tableName string) (string, error) {
 	return fmt.Sprintf(`%s succesfully deleted.`, tableName), nil
 }
 
-func AddColumnsIfNotExists() error {
+func AddColumnsIfNotExists(tableName string) error {
 	config := LoadConfig()
 	DB, err := config.Connect()
 	if err != nil {
 		return fmt.Errorf(`error testing DB connection: %s`, err)
 	}
 
-	sql := `
-		ALTER TABLE pokemon_scores 
-		ADD COLUMN IF NOT EXISTS "USERNAME" VARCHAR(255),
-		ADD COLUMN IF NOT EXISTS "SCORE" INT;
-	`
+	sql_username := fmt.Sprintf(`
+		ALTER TABLE %s
+		ADD COLUMN IF NOT EXISTS "USERNAME" VARCHAR(255);
+	`, tableName)
+	sql_score := fmt.Sprintf(`
+		ALTER TABLE %s
+		ADD COLUMN IF NOT EXISTS "SCORE" INTEGER;
+	`, tableName)
 
-	_, err = DB.Exec(sql)
+	_, err = DB.Exec(sql_username)
 	if err != nil {
-		return fmt.Errorf("error adding columns: %s", err)
+		return fmt.Errorf("error adding username columns: %s", err)
+	}
+	_, err = DB.Exec(sql_score)
+	if err != nil {
+		return fmt.Errorf("error adding score columns: %s", err)
 	}
 	defer DB.Close()
 	return nil
 }
 
 func UpdateTableWithUser(tableName string, username string,) (string, error) {
-	if err := AddColumnsIfNotExists(); err != nil {
+	if err := AddColumnsIfNotExists(tableName); err != nil {
 		return "", fmt.Errorf("error ensuring columns: %v", err)
 	}
 	
