@@ -147,7 +147,7 @@ func AddColumnsIfNotExists() error {
 	config := LoadConfig()
 	DB, err := config.Connect()
 	if err != nil {
-		log.Fatal("Error testing DB connection: ", err)
+		return fmt.Errorf(`error testing DB connection: %s`, err)
 	}
 
 	sql := `
