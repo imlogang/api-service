@@ -172,7 +172,8 @@ func AddColumnsIfNotExists(tableName string) error {
 }
 
 func UpdateTableWithUser(tableName string, username string,) (string, error) {
-	if err := AddColumnsIfNotExists(tableName); err != nil {
+	err := AddColumnsIfNotExists(tableName)
+	if err != nil {
 		return "", fmt.Errorf("error ensuring columns: %v", err)
 	}
 	
