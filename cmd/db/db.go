@@ -158,7 +158,7 @@ func AddColumnsIfNotExists(tableName string) error {
 		ALTER TABLE %s
 		ADD COLUMN IF NOT EXISTS "SCORE" INTEGER;
 	`, tableName)
-
+	fmt.Println(sql_score, sql_username)
 	_, err = DB.Exec(sql_username)
 	if err != nil {
 		return fmt.Errorf("error adding username columns: %s", err)
