@@ -142,3 +142,24 @@ func DeleteTable(tableName string) (string, error) {
 	defer DB.Close()
 	return fmt.Sprintf(`%s succesfully deleted.`, tableName), nil
 }
+
+func UpdateTableWithUser(tableName string, user string,) (string, error) {
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		log.Fatal("Error testing DB connection: ", err)
+	}
+	if tableName == "" {
+		return "", fmt.Errorf("the table name must not be empty")
+	}
+	if user == "" {
+		return "", fmt.Errorf("the user must not be empty")
+	}
+	sql := fmt.Sprintf(`INSERT INTO %s (USER, SCORE) VALUES (%s, 0)`, tableName, user)
+	_, err = DB.Exec(sql)
+	if err != nil {
+		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
+	}
+	defer DB.Close()
+	return fmt.Sprintf("The table %s was updated", tableName), nil
+}

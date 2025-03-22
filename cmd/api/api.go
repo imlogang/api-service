@@ -156,3 +156,25 @@ func DeleteTableAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
 	}
 }
+
+func UpdateTableWithUser(w http.ResponseWriter, r *http.Request) {
+	var requestBody struct {
+		TableName string `json:"table_name"`
+		User      string `json:"user"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	sql, err := db.UpdateTableWithUser(requestBody.TableName, requestBody.User)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(map[string]string{"table_updated_with:": sql}); err != nil {
+		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
+	}
+}
