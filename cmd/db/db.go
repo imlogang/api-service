@@ -143,7 +143,32 @@ func DeleteTable(tableName string) (string, error) {
 	return fmt.Sprintf(`%s succesfully deleted.`, tableName), nil
 }
 
+func AddColumnsIfNotExists() error {
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		log.Fatal("Error testing DB connection: ", err)
+	}
+
+	sql := `
+		ALTER TABLE pokemon_scores 
+		ADD COLUMN IF NOT EXISTS "USERNAME" VARCHAR(255),
+		ADD COLUMN IF NOT EXISTS "SCORE" INT;
+	`
+
+	_, err = DB.Exec(sql)
+	if err != nil {
+		return fmt.Errorf("error adding columns: %s", err)
+	}
+	defer DB.Close()
+	return nil
+}
+
 func UpdateTableWithUser(tableName string, username string,) (string, error) {
+	if err := AddColumnsIfNotExists(); err != nil {
+		return "", fmt.Errorf("error ensuring columns: %v", err)
+	}
+	
 	config := LoadConfig()
 	DB, err := config.Connect()
 	if err != nil {
