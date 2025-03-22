@@ -157,11 +157,13 @@ func AddColumnsIfNotExists(tableName string) error {
 	if err != nil {
 		return fmt.Errorf("error adding username columns: %s", err)
 	}
+	fmt.Printf("RAN DB COMMAND FOR %s", sql_username)
 	_, err = DB.Exec(sql_score)
 	if err != nil {
 		return fmt.Errorf("error adding score columns: %s", err)
 	}
-	fmt.Print("Succesfully ran commands. Closing DB connections.")
+	fmt.Printf("RAN DB COMMAND FOR %s", sql_score)
+
 	defer DB.Close()
 	return nil
 }
