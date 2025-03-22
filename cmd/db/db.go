@@ -150,15 +150,9 @@ func AddColumnsIfNotExists(tableName string) error {
 		return fmt.Errorf(`error testing DB connection: %s`, err)
 	}
 
-	sql_username := fmt.Sprintf(`
-		ALTER TABLE %s
-		ADD COLUMN IF NOT EXISTS "USERNAME" VARCHAR(255);
-	`, tableName)
-	sql_score := fmt.Sprintf(`
-		ALTER TABLE %s
-		ADD COLUMN IF NOT EXISTS "SCORE" INTEGER;
-	`, tableName)
-	fmt.Println(sql_score, sql_username)
+	sql_username := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "USERNAME" VARCHAR(255);`, tableName)
+	sql_score := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "SCORE" INTEGER;`, tableName)
+
 	_, err = DB.Exec(sql_username)
 	if err != nil {
 		return fmt.Errorf("error adding username columns: %s", err)
@@ -167,6 +161,7 @@ func AddColumnsIfNotExists(tableName string) error {
 	if err != nil {
 		return fmt.Errorf("error adding score columns: %s", err)
 	}
+	fmt.Print("Succesfully ran commands. Closing DB connections.")
 	defer DB.Close()
 	return nil
 }
