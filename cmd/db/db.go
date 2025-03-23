@@ -194,7 +194,7 @@ func UpdateTableWithUser(tableName string, username string,) (string, error) {
 	if username == "" {
 		return "", fmt.Errorf("the user must not be empty")
 	}
-	sql := fmt.Sprintf(`INSERT INTO %s (USERNAME, SCORE) VALUES (%s, 0)`, tableName, username)
+	sql := fmt.Sprintf(`INSERT INTO %s ("USERNAME", "SCORE") VALUES (%s, 0)`, tableName, username)
 	_, err = DB.Exec(sql)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
