@@ -157,19 +157,16 @@ func AddColumnsIfNotExists(tableName string) error {
 
 	sql_username := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "USERNAME" VARCHAR(255);`, tableName)
 	sql_score := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "SCORE" INTEGER;`, tableName)
-	fmt.Println(sql_username, sql_score)
+
 	_, err = DB.Exec(sql_username)
 	if err != nil {
-		log.Fatal("error: ", err)
 		return fmt.Errorf("error adding username columns: %s", err)
 	}
-	fmt.Printf("RAN DB COMMAND FOR %s", sql_username)
+
 	_, err = DB.Exec(sql_score)
 	if err != nil {
-		log.Fatal("error: ", err)
 		return fmt.Errorf("error adding score columns: %s", err)
 	}
-	fmt.Printf("RAN DB COMMAND FOR %s", sql_score)
 
 	return nil
 }
@@ -194,7 +191,7 @@ func UpdateTableWithUser(tableName string, username string,) (string, error) {
 	if username == "" {
 		return "", fmt.Errorf("the user must not be empty")
 	}
-	sql := fmt.Sprintf(`INSERT INTO %s ("USERNAME", "SCORE") VALUES (%s, 0)`, tableName, username)
+	sql := fmt.Sprintf(`INSERT INTO %s ("USERNAME", "SCORE") VALUES ('%s', 0)`, tableName, username)
 	_, err = DB.Exec(sql)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
