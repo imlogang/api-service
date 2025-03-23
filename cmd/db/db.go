@@ -171,6 +171,36 @@ func AddColumnsIfNotExists(tableName string) error {
 	return nil
 }
 
+func AddUserIfNotExist(tableName string, username string) (string, error) {
+	if tableName == "" || username == ""{
+		return "", fmt.Errorf("tablename: %s, and username: %s, cannot be empty", tableName, username)
+	}
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		log.Fatal("Error testing DB connection: ", err)
+	}
+	defer DB.Close()
+
+	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE "USERNAME" = $1;`, tableName)
+	var exists int
+	err = DB.QueryRow(sql, username).Scan(&exists)
+	if err != nil {
+		return "", fmt.Errorf("there was an error querying the database, %s", err)
+	}
+
+	if exists > 0 {
+		return "the user exists", nil
+	} else {
+		response, err := UpdateTableWithUser(tableName, username)
+		if err != nil {
+			return "", fmt.Errorf("there was an error creating the user in the database, %s", err)
+		}
+		return response, nil
+	}
+
+}
+
 func UpdateTableWithUser(tableName string, username string,) (string, error) {
 	err := AddColumnsIfNotExists(tableName)
 	if err != nil {
@@ -214,12 +244,19 @@ func GetCurrentScore(tableName string, username string) (int, error) {
 	var score int
 	err = DB.QueryRow(sql, username).Scan(&score)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			_, err := AddUserIfNotExist(tableName, username)
+			if err != nil {
+				return 0, fmt.Errorf("there was an error creating your user, %s", err)
+			}
+			return 0, nil
+		}
 		return 0,fmt.Errorf("there was an error finding the score for a username. %s", err)
 	}
 	return score, nil
 }
 
-func UpdateScoreForUser (tableName string, username string, score int, column string) (string, error) {
+func UpdateScoreForUser(tableName string, username string, score int, column string) (string, error) {
 	if tableName == "" || username == "" || score == 0 || column == "" {
 		return "", fmt.Errorf("tablename: %s, username: %s, score: %d, or column: %s must not be empty", tableName, username, score, column)
 	}
