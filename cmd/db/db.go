@@ -229,7 +229,7 @@ func UpdateScoreForUser (tableName string, username string, score int, column st
 		log.Fatal("Error testing DB connection: ", err)
 	}
 	defer DB.Close()
-	sql := fmt.Sprintf(`UPDATE %s SET %s = %d WHERE USERNAME = %s`, tableName, column, score, username)
+	sql := fmt.Sprintf(`UPDATE %s SET %s = %d WHERE "USERNAME" = %s`, tableName, column, score, username)
 	_, err = DB.Exec(sql)
 	if err != nil {
 		return "", fmt.Errorf("there was an error updating the users score. %s", err)
