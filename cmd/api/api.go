@@ -183,8 +183,6 @@ func GetScoreAPI(w http.ResponseWriter, r *http.Request) {
 	fullURL := r.URL.String()
 	tableName := r.URL.Query().Get("tablename")
 	username := r.URL.Query().Get("username")
-	log.Printf("%s", fullURL)
-	log.Printf("%s, %s", tableName, username)
 
 	if tableName == "" || username == "" {
 		http.Error(w, fmt.Sprintf("Error: tableName or username cannot be empty. Received - tableName: %s, username: %s\n The full URL: %s", tableName, username, fullURL), http.StatusBadRequest)
