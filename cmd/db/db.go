@@ -199,3 +199,22 @@ func UpdateTableWithUser(tableName string, username string,) (string, error) {
 
 	return fmt.Sprintf("The table %s was updated", tableName), nil
 }
+
+func GetCurrentScore(tableName string, username string) (int, error) {
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		log.Fatal("Error testing DB connection: ", err)
+	}
+	defer DB.Close()
+	if tableName == "" || username == "" {
+		return 0, fmt.Errorf("table or username must not be empty. table: %s, username: %s", tableName, username)
+	}
+	sql := fmt.Sprintf(`SELECT "SCORE" FROM "%s" WHERE "USERNAME" = $1;`, tableName)
+	var score int
+	err = DB.QueryRow(sql, username).Scan(&score)
+	if err != nil {
+		return 0,fmt.Errorf("there was an error finding the score for a username. %s", err)
+	}
+	return score, nil
+}

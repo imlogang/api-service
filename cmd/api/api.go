@@ -178,3 +178,21 @@ func UpdateTableWithUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
 	}
 }
+
+func GetScoreAPI(w http.ResponseWriter, r *http.Request) {
+	tableName := r.URL.Query().Get("tableName")
+	username := r.URL.Query().Get("username")
+
+	if tableName == "" || username == "" {
+		http.Error(w, "tableName or username cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	score, err := db.GetCurrentScore(tableName, username)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error retrieving score: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "Score for %s: %d", username, score)
+}
