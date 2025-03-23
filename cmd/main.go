@@ -52,6 +52,7 @@ func main() {
 	http.HandleFunc("/api/private/delete_table", httpapi.DeleteTableAPI)
 	http.HandleFunc("/api/private/update_table_with_user", httpapi.UpdateTableWithUser)
 	http.HandleFunc("/api/private/get_current_score", httpapi.GetScoreAPI)
+	http.HandleFunc("/api/private/update_user_score", httpapi.UpdateScoreForUserAPI)
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")

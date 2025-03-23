@@ -218,3 +218,22 @@ func GetCurrentScore(tableName string, username string) (int, error) {
 	}
 	return score, nil
 }
+
+func UpdateScoreForUser (tableName string, username string, score int, column string) (string, error) {
+	if tableName == "" || username == "" || score == 0 || column == "" {
+		return "", fmt.Errorf("tablename: %s, username: %s, score: %d, or column: %s must not be empty", tableName, username, score, column)
+	}
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		log.Fatal("Error testing DB connection: ", err)
+	}
+	defer DB.Close()
+	sql := fmt.Sprintf(`UPDATE %s SET %s = %d WHERE USERNAME = %s`, tableName, column, score, username)
+	_, err = DB.Exec(sql)
+	if err != nil {
+		return "", fmt.Errorf("there was an error updating the users score. %s", err)
+	}
+
+	return fmt.Sprintf("The user: %s, has been updated in the table: %s with score: %d", username, tableName, score), nil
+}
