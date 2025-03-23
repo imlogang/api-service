@@ -110,6 +110,9 @@ func CreateTable(tableName string) (string, error) {
 	if err != nil {
 		log.Fatal("Error testing DB connection:", err)
 	}
+
+	defer DB.Close()
+
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
 	}
@@ -120,7 +123,6 @@ func CreateTable(tableName string) (string, error) {
 		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
 	}
 
-	defer DB.Close()
 	return fmt.Sprintf(`%s succesfully created.`, tableName), nil
 }
 
@@ -130,6 +132,9 @@ func DeleteTable(tableName string) (string, error) {
 	if err != nil {
 		log.Fatal("Error testing DB connection:", err)
 	}
+
+	defer DB.Close()
+
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
 	}
@@ -139,7 +144,6 @@ func DeleteTable(tableName string) (string, error) {
 		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
 	}
 
-	defer DB.Close()
 	return fmt.Sprintf(`%s succesfully deleted.`, tableName), nil
 }
 
@@ -149,22 +153,24 @@ func AddColumnsIfNotExists(tableName string) error {
 	if err != nil {
 		return fmt.Errorf(`error testing DB connection: %s`, err)
 	}
+	defer DB.Close()
 
 	sql_username := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "USERNAME" VARCHAR(255);`, tableName)
 	sql_score := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "SCORE" INTEGER;`, tableName)
 	fmt.Println(sql_username, sql_score)
 	_, err = DB.Exec(sql_username)
 	if err != nil {
+		log.Fatal("error: ", err)
 		return fmt.Errorf("error adding username columns: %s", err)
 	}
 	fmt.Printf("RAN DB COMMAND FOR %s", sql_username)
 	_, err = DB.Exec(sql_score)
 	if err != nil {
+		log.Fatal("error: ", err)
 		return fmt.Errorf("error adding score columns: %s", err)
 	}
 	fmt.Printf("RAN DB COMMAND FOR %s", sql_score)
 
-	defer DB.Close()
 	return nil
 }
 
@@ -179,6 +185,9 @@ func UpdateTableWithUser(tableName string, username string,) (string, error) {
 	if err != nil {
 		log.Fatal("Error testing DB connection: ", err)
 	}
+
+	defer DB.Close()
+
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
 	}
@@ -190,6 +199,6 @@ func UpdateTableWithUser(tableName string, username string,) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
 	}
-	defer DB.Close()
+
 	return fmt.Sprintf("The table %s was updated", tableName), nil
 }
