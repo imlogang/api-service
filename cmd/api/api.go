@@ -180,11 +180,12 @@ func UpdateTableWithUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetScoreAPI(w http.ResponseWriter, r *http.Request) {
+	fullURL := r.URL.String()
 	tableName := r.URL.Query().Get("tablename")
 	username := r.URL.Query().Get("username")
 
 	if tableName == "" || username == "" {
-		http.Error(w, fmt.Sprintf("Error: tableName or username cannot be empty. Received - tableName: %s, username: %s", tableName, username), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Error: tableName or username cannot be empty. Received - tableName: %s, username: %s\n The full URL: %s", tableName, username, fullURL), http.StatusBadRequest)
 		return
 	}
 
