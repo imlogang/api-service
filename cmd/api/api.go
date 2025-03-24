@@ -196,7 +196,7 @@ func GetScoreAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "Score for %s: %d", username, score)
+	fmt.Fprintf(w, "Score for %s: %d\n", username, score)
 }
 
 func UpdateScoreForUserAPI(w http.ResponseWriter, r *http.Request) {
@@ -229,5 +229,5 @@ func GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("there was an error finding your pokemon, %s", err), http.StatusInternalServerError)
 	}
 	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "%s", pokemon)
+	fmt.Fprintf(w, "%s\n", pokemon)
 }
