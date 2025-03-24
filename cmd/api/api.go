@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-api/cmd/db"
 	"go-api/cmd/deluge"
+	"go-api/cmd/games"
 	"io"
 	"log"
 	"net/http"
@@ -220,4 +221,13 @@ func UpdateScoreForUserAPI(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(map[string]string{"update_answer:": sql}); err != nil {
 		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
 	}
+}
+
+func GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
+	pokemon, err := games.GetPokemon()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("there was an error finding your pokemon, %s", err), http.StatusInternalServerError)
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	fmt.Fprintf(w, "%s", pokemon)
 }
