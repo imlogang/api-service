@@ -12,7 +12,7 @@ func randomNumber() (number int) {
 
 func GetPokemon() (string, error) {
 	randomNumber := randomNumber()
-	pokemon, err := pokeapi.Resource("pokemon", randomNumber)
+	pokemon, err := pokeapi.Resource("pokemon", randomNumber, 1025)
 	if err != nil {
 		return "", fmt.Errorf("there was an error: %s", err)
 	}
