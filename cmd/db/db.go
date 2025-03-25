@@ -136,7 +136,7 @@ func checkIfTableExists(tableName string) (error) {
 		return err
 	}
 	defer DB.Close()
-	sql := fmt.Sprintf(`SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '$1');`, )
+	sql := `SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '$1');`
 	var exists int
 	err = DB.QueryRow(sql, tableName).Scan(&exists)
 	if err != nil {
