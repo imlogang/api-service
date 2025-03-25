@@ -136,13 +136,13 @@ func checkIfTableExists(tableName string) (error) {
 		return err
 	}
 	defer DB.Close()
-	sql := `SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '$1');`
-	var exists int
+	sql := `SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = $1);`
+	var exists bool
 	err = DB.QueryRow(sql, tableName).Scan(&exists)
 	if err != nil {
-		return fmt.Errorf("there was an err creating the table: %s", err)
+		return fmt.Errorf("there was an error checking if the table exists: %s", err)
 	}
-	if exists > 0 {
+	if exists {
 		return nil
 	} else {
 		_, err := CreateTable(tableName)
