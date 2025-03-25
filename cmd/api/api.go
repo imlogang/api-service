@@ -175,7 +175,7 @@ func UpdateTableWithUser(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(map[string]string{"table_updated_with:": sql}); err != nil {
+	if err := json.NewEncoder(w).Encode(map[string]string{"table_updated_with": sql}); err != nil {
 		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
 	}
 }
@@ -250,7 +250,7 @@ func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request){
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(map[string]string{"answer:": sql}); err != nil {
+	if err := json.NewEncoder(w).Encode(map[string]string{"answer": sql}); err != nil {
 		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
 	}
 }
