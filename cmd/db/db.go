@@ -340,8 +340,8 @@ func PutAnswerInDB(tablenName string, answer string, column string) (string, err
 		return "", fmt.Errorf("there was an error connecting to the database: %s", err)
 	}
 	defer DB.Close()
-	sql := fmt.Sprintf(`UPDATE %s SET "%s" = %s WHERE ID = '1';`, tablenName, column, answer)
-	_, err = DB.Exec(sql)
+	sql := fmt.Sprintf(`UPDATE %s SET "%s" = $1 WHERE ID = '1';`, tablenName, column)
+	_, err = DB.Exec(sql, answer)
 	if err != nil {
 		return "", fmt.Errorf("there was an error updating the database: %s", err)
 	}
