@@ -231,3 +231,42 @@ func GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintf(w, "%s\n", pokemon)
 }
+
+func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request){ 
+	var requestBody struct {
+		TableName string `json:"table_name"`
+		Answer    string `json:"answer"`
+		Column    string `json:"column"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	sql, err := db.PutAnswerInDB(requestBody.TableName, requestBody.Answer, requestBody.Column)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(map[string]string{"answer:": sql}); err != nil {
+		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
+	}
+}
+
+func ReadAnswerFromDBAPI(w http.ResponseWriter, r *http.Request) {
+	tableName := r.URL.Query().Get("tablename")
+	column := r.URL.Query().Get("column")
+	if tableName == "" || column == "" {
+		http.Error(w, fmt.Sprintf("tablename: %s or column: %s cannot be empty.", tableName, column), http.StatusBadRequest)
+		return
+	}
+	answer, err := db.ReadAnswerFromDB(tableName, column)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("there was an error finding the answer: %s", err), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	fmt.Fprintf(w, "%s\n", answer)
+}

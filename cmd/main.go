@@ -54,6 +54,8 @@ func main() {
 	http.HandleFunc("/api/private/get_current_score", httpapi.GetScoreAPI)
 	http.HandleFunc("/api/private/update_user_score", httpapi.UpdateScoreForUserAPI)
 	http.HandleFunc("/api/private/get_pokemon", httpapi.GetPokemonAPI)
+	http.HandleFunc("/api/private/put_answer", httpapi.PutAnswerInDBAPI)
+	http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")

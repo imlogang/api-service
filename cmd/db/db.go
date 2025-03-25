@@ -126,6 +126,33 @@ func CreateTable(tableName string) (string, error) {
 	return fmt.Sprintf(`%s succesfully created.`, tableName), nil
 }
 
+func checkIfTableExists(tableName string) (error) {
+	if tableName == "" {
+		return fmt.Errorf("the table: %s must not be empty", tableName)
+	}
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		return err
+	}
+	defer DB.Close()
+	sql := fmt.Sprintf(`SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '$1');`, )
+	var exists int
+	err = DB.QueryRow(sql, tableName).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("there was an err creating the table: %s", err)
+	}
+	if exists > 0 {
+		return nil
+	} else {
+		_, err := CreateTable(tableName)
+		if err != nil {
+			return fmt.Errorf("there was an error creating your table: %s", err)
+		}
+	}
+	return nil
+}
+
 func DeleteTable(tableName string) (string, error) {
 	config := LoadConfig()
 	DB, err := config.Connect()
@@ -166,6 +193,24 @@ func AddColumnsIfNotExists(tableName string) error {
 	_, err = DB.Exec(sql_score)
 	if err != nil {
 		return fmt.Errorf("error adding score columns: %s", err)
+	}
+
+	return nil
+}
+
+func addColumnIfNotExistsOneDB(tableName string, column string) error {
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		return fmt.Errorf(`error testing DB connection: %s`, err)
+	}
+	defer DB.Close()
+
+	sql := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" VARCHAR(255);`, tableName, column)
+
+	_, err = DB.Exec(sql)
+	if err != nil {
+		return fmt.Errorf("error adding %s columns: %s", column, err)
 	}
 
 	return nil
@@ -273,4 +318,52 @@ func UpdateScoreForUser(tableName string, username string, score int, column str
 	}
 
 	return fmt.Sprintf("The user: %s, has been updated in the table: %s with score: %d", username, tableName, score), nil
+}
+
+func PutAnswerInDB(tablenName string, answer string, column string) (string, error) {
+	if tablenName == "" || answer == "" || column == "" {
+		return "", fmt.Errorf("the tablename: %s, answer: %s, or column: %s cannot be empty", tablenName, answer, column)
+	}
+
+	err := checkIfTableExists(tablenName)
+	if err != nil {
+		return "", fmt.Errorf("there was an error creating your table: %s", err)
+	}
+	err = addColumnIfNotExistsOneDB(tablenName, column)
+	if err != nil {
+		return "", fmt.Errorf("there was an error adding your column: %s", column)
+	}
+
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		return "", fmt.Errorf("there was an error connecting to the database: %s", err)
+	}
+	defer DB.Close()
+	sql := fmt.Sprintf(`UPDATE %s SET "%s" = %s WHERE ID = '1';`, tablenName, column, answer)
+	_, err = DB.Exec(sql)
+	if err != nil {
+		return "", fmt.Errorf("there was an error updating the database: %s", err)
+	}
+	return fmt.Sprintf("the %s table has been updated with %s", tablenName, answer), nil
+}
+
+func ReadAnswerFromDB(tableName string, column string) (string, error) {
+	if tableName == "" || column == "" {
+		return "", fmt.Errorf("tablename: %s or column: %s cannot be empty", tableName, column)
+	}
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		return "", fmt.Errorf("there was an error connecting to the database: %s", err)
+	}
+	defer DB.Close()
+
+	sql := fmt.Sprintf("SELECT '%s' FROM %s WHERE id = 1", column, tableName)
+	var answer string
+	err = DB.QueryRow(sql).Scan(&answer)
+	if err != nil {
+		return "", fmt.Errorf("there was an error finding the answer: %s", err)
+	}
+	return answer, nil
 }
