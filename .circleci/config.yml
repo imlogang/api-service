@@ -59,7 +59,7 @@ jobs:
           command: |
             cd cmd && go list ./...  | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname --" --split-by=timings --timings-type=name
       - store_test_results:
-          path: /cmd/junit.xml
+          path: cmd/junit.xml
   
   lint:
     docker:
