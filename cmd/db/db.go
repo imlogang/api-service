@@ -356,11 +356,6 @@ func PutAnswerInDB(tablenName string, answer string, column string, secondColumn
 	if err != nil {
 		return "", fmt.Errorf("there was an error updating/creating the row: %s", err)
 	}
-	
-	if err != nil {
-		log.Fatalf("there was an error updating the database: %s", err)
-		return "", fmt.Errorf("there was an error updating the database: %s", err)
-	}
 	return fmt.Sprintf("the %s table has been updated with %s", tablenName, answer), nil
 }
 
