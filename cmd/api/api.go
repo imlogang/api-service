@@ -240,7 +240,7 @@ func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request){
 		SecondColumn string `json:"second_column"`
 		NumInArray   int    `json:"numinarray"`
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
@@ -249,13 +249,13 @@ func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request){
 	}
 	sql, err := db.PutAnswerInDB(requestBody.TableName, requestBody.Answer, requestBody.Column, requestBody.SecondColumn, requestBody.NumInArray)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf(`{"error": "Invalid request body: %v"}`, err), http.StatusBadRequest)
 		return
 	}
 	
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(map[string]string{"answer": sql}); err != nil {
-		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf(`{"error": "Error updating answer: %v"}`, err), http.StatusBadRequest)
 	}
 }
 
