@@ -215,10 +215,12 @@ func addColumnIfNotExistsAnswerTable(tableName string, column string, secondColu
 
 	_, err = DB.Exec(sql)
 	if err != nil {
+		fmt.Printf("error adding %s columns: %s", column, err)
 		return fmt.Errorf("error adding %s columns: %s", column, err)
 	}
 	_, err = DB.Exec(sqlSecond)
 	if err != nil {
+		fmt.Printf("error adding %s columns: %s", secondColumn, err)
 		return fmt.Errorf("error adding %s columns: %w", secondColumn, err)
 	}
 
@@ -352,6 +354,7 @@ func PutAnswerInDB(tablenName string, answer string, column string, secondColumn
 	sql := fmt.Sprintf(`UPDATE %s SET "%s" = $1, %s = $2 WHERE ID = '1';`, tablenName, column, secondColumn)
 	_, err = DB.Exec(sql, answer, numberInArray)
 	if err != nil {
+		fmt.Printf("there was an error updating the database: %s", err)
 		return "", fmt.Errorf("there was an error updating the database: %s", err)
 	}
 	return fmt.Sprintf("the %s table has been updated with %s", tablenName, answer), nil
