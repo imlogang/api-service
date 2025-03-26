@@ -351,7 +351,7 @@ func PutAnswerInDB(tablenName string, answer string, column string, secondColumn
 		return "", fmt.Errorf("there was an error connecting to the database: %s", err)
 	}
 	defer DB.Close()
-	sql := fmt.Sprintf(`UPDATE %s SET "%s" = $1, "%s" = $2 WHERE ID = '1';`, tablenName, column, secondColumn)
+	sql := fmt.Sprintf(`INSERT INTO %s ("%s", "%s") VALUES ($1, $2) ON CONFLICT ("ID") DO UPDATE SET "%s" = $1, "%s" = $2;`, tablenName, column, secondColumn, column, secondColumn)
 	_, err = DB.Exec(sql, answer, numberInArray)
 	if err != nil {
 		log.Fatalf("there was an error updating the database: %s", err)
