@@ -1,7 +1,7 @@
 version: 2.1
 jobs:
   build-image:
-    resource_class: medium
+    resource_class: large
     machine: 
       image: ubuntu-2204:current
       docker_layer_caching: true
