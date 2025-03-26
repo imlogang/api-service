@@ -211,7 +211,7 @@ func addColumnIfNotExistsAnswerTable(tableName string, column string, secondColu
 	defer DB.Close()
 
 	sql := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" VARCHAR(255);`, tableName, column)
-	sqlSecond := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" INT`, tableName, secondColumn)
+	sqlSecond := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" INTEGER`, tableName, secondColumn)
 
 	_, err = DB.Exec(sql)
 	if err != nil {
