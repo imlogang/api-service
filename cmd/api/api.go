@@ -234,16 +234,18 @@ func GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
 
 func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request){ 
 	var requestBody struct {
-		TableName string `json:"table_name"`
-		Answer    string `json:"answer"`
-		Column    string `json:"column"`
+		TableName    string `json:"table_name"`
+		Answer       string `json:"answer"`
+		Column       string `json:"column"`
+		SecondColumn string `json:"second_column"`
+		NumInArray   int    `json:"numinarray"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	sql, err := db.PutAnswerInDB(requestBody.TableName, requestBody.Answer, requestBody.Column)
+	sql, err := db.PutAnswerInDB(requestBody.TableName, requestBody.Answer, requestBody.Column, requestBody.SecondColumn, requestBody.NumInArray)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
 		return
