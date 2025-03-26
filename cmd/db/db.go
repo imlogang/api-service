@@ -332,7 +332,7 @@ func UpdateScoreForUser(tableName string, username string, score int, column str
 }
 
 func PutAnswerInDB(tablenName string, answer string, column string, secondColumn string, numberInArray int) (string, error) {
-	if tablenName == "" || answer == "" || column == "" || numberInArray <= 0 || secondColumn == "" {
+	if tablenName == "" || answer == "" || column == "" || secondColumn == "" {
 		return "", fmt.Errorf("the tablename: %s, answer: %s, column: %s, numberInArray: %d, or secondColumn: %s cannot be empty", tablenName, answer, column, numberInArray, secondColumn)
 	}
 
