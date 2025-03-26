@@ -244,20 +244,20 @@ func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
-		fmt.Printf("invalid request body: %s", err)
+		log.Fatalf("invalid request body: %s", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	sql, err := db.PutAnswerInDB(requestBody.TableName, requestBody.Answer, requestBody.Column, requestBody.SecondColumn, requestBody.NumInArray)
 	if err != nil {
-		fmt.Printf("could not put in database: %s", err)
+		log.Fatalf("could not put in database: %s", err)
 		http.Error(w, fmt.Sprintf(`{"error": "Invalid request body: %v"}`, err), http.StatusBadRequest)
 		return
 	}
 	
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(map[string]string{"answer": sql}); err != nil {
-		fmt.Printf("error updating answer: %s", err)
+		log.Fatalf("error updating answer: %s", err)
 		http.Error(w, fmt.Sprintf(`{"error": "Error updating answer: %v"}`, err), http.StatusBadRequest)
 	}
 }

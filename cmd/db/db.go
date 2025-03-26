@@ -354,7 +354,7 @@ func PutAnswerInDB(tablenName string, answer string, column string, secondColumn
 	sql := fmt.Sprintf(`UPDATE %s SET "%s" = $1, %s = $2 WHERE ID = '1';`, tablenName, column, secondColumn)
 	_, err = DB.Exec(sql, answer, numberInArray)
 	if err != nil {
-		fmt.Printf("there was an error updating the database: %s", err)
+		log.Fatalf("there was an error updating the database: %s", err)
 		return "", fmt.Errorf("there was an error updating the database: %s", err)
 	}
 	return fmt.Sprintf("the %s table has been updated with %s", tablenName, answer), nil
