@@ -4,6 +4,9 @@ circleci:
   jobNumber: ""
   project_id: "8dbb4c7a-8584-43b3-8c8f-41cc33ce243e"
 
+imagePullSecrets:
+  - name: regcred
+
 nameOverride: "go-api-service"
 secretName: "go-api-secrets"
 
@@ -14,11 +17,6 @@ resources:
   requests:
     cpu: 500m
     memory: 512Mi
-
-global:
-  postgresql:
-    auth:
-      database: "dvdrental"
 
 postgresql:
   postgresqlUsername: postgres
