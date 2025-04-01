@@ -32,13 +32,6 @@ func main() {
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
 	http.HandleFunc("/api/private/root", httpapi.GetRoot)
-	http.HandleFunc("/resume", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./cmd/website/resume.html")
-	})
-	http.HandleFunc("/blog", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./cmd/website/blog/blog.html")
-	})
-	http.Handle("/", http.FileServer(http.Dir("./cmd/website")))
 
 	config := db.LoadConfig()
 	err := config.TestDBConnection()
