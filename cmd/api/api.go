@@ -279,19 +279,20 @@ func ReadAnswerFromDBAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func LeaderboardAPI(w http.ResponseWriter, r *http.Request) {
-	fullURL := r.URL.String()
-	tableName := r.URL.Query().Get("tablename")
+    fullURL := r.URL.String()
+    tableName := r.URL.Query().Get("tablename")
 
-	if tableName == "" {
-		http.Error(w, fmt.Sprintf("Error: tableName or username cannot be empty. Received - tableName: %s\n The full URL: %s", tableName, fullURL), http.StatusBadRequest)
-		return
-	}
+    if tableName == "" {
+        http.Error(w, fmt.Sprintf("Error: tableName cannot be empty. Received - tableName: %s\n The full URL: %s", tableName, fullURL), http.StatusBadRequest)
+        return
+    }
 
-	score, err := db.GetLeaderboard(tableName)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving score: %s", err), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "Leaderboard:\n%s", score)
+    leaderboard, err := db.GetLeaderboard(tableName)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Error retrieving leaderboard: %s", err), http.StatusInternalServerError)
+        return
+    }
+    
+    w.Header().Set("Content-Type", "text/plain")
+    fmt.Fprintf(w, "Leaderboard:\n%s", leaderboard)
 }

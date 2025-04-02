@@ -391,10 +391,30 @@ func GetLeaderboard(tableName string) (string, error) {
 	defer DB.Close()
 
 	sql := fmt.Sprintf(`SELECT "USERNAME", "SCORE" FROM %s ORDER BY "SCORE" DESC LIMIT 10;`, tableName)
-	var answer string
-	err = DB.QueryRow(sql).Scan(&answer)
-	if err != nil {
-		return "", fmt.Errorf("there was an error finding the answer: %s", err)
-	}
-	return answer, nil
+	rows, err := DB.Query(sql)
+    if err != nil {
+        return "", fmt.Errorf("error executing query: %s", err)
+    }
+    defer rows.Close()
+
+    var leaderboard string
+    for rows.Next() {
+        var username string
+        var score int
+        err := rows.Scan(&username, &score)
+        if err != nil {
+            return "", fmt.Errorf("error scanning row: %s", err)
+        }
+        leaderboard += fmt.Sprintf("Username: %s, Score: %d\n", username, score)
+    }
+
+	if err = rows.Err(); err != nil {
+        return "", fmt.Errorf("error iterating through rows: %s", err)
+    }
+
+    if leaderboard == "" {
+        return "No leaderboard data found.", nil
+    }
+
+	return leaderboard, nil
 }
