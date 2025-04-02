@@ -49,6 +49,7 @@ func main() {
 	http.HandleFunc("/api/private/get_pokemon", httpapi.GetPokemonAPI)
 	http.HandleFunc("/api/private/put_answer", httpapi.PutAnswerInDBAPI)
 	http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
+	http.HandleFunc("/api/private/leaderboard", httpapi.LeaderboardAPI)
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")

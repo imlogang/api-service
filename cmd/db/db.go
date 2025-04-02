@@ -378,3 +378,23 @@ func ReadAnswerFromDB(tableName string, column string) (string, error) {
 	}
 	return answer, nil
 }
+
+func GetLeaderboard(tableName string) (string, error) {
+	if tableName == "" {
+		return "", fmt.Errorf("tablename: %s", tableName)
+	}
+	config := LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		return "", fmt.Errorf("there was an error connecting to the database: %s", err)
+	}
+	defer DB.Close()
+
+	sql := fmt.Sprintf(`SELECT "USERNAME", "SCORE" FROM %s ORDER BY "SCORE" DESC LIMIT 10;`, tableName)
+	var answer string
+	err = DB.QueryRow(sql).Scan(&answer)
+	if err != nil {
+		return "", fmt.Errorf("there was an error finding the answer: %s", err)
+	}
+	return answer, nil
+}
