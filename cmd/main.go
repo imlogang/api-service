@@ -31,7 +31,6 @@ func main() {
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
-	http.HandleFunc("/api/private/root", httpapi.GetRoot)
 
 	config := db.LoadConfig()
 	err := config.TestDBConnection()

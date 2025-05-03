@@ -53,30 +53,3 @@ func TestHealthCheckHandler(t *testing.T) {
 		t.Errorf("HealthCheckHandler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 }
-
-// Test GetRoot
-func TestGetRoot(t *testing.T) {
-	// Create a request to pass to the handler
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a response recorder
-	rr := httptest.NewRecorder()
-
-	// Call the handler
-	handler := http.HandlerFunc(GetRoot)
-	handler.ServeHTTP(rr, req)
-
-	// Check the status code
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("GetRoot returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
-
-	// Check the response body
-	expected := "This is my website!\n"
-	if rr.Body.String() != expected {
-		t.Errorf("GetRoot returned wrong body: got %v want %v", rr.Body.String(), expected)
-	}
-}

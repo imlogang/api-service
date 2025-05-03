@@ -92,16 +92,6 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func GetRoot(w http.ResponseWriter, r *http.Request) {
-	// Write the string and check for any error
-	_, err := io.WriteString(w, "This is my website!\n")
-	if err != nil {
-		// If there is an error, return an internal server error response
-		http.Error(w, "Failed to write response", http.StatusInternalServerError)
-		return
-	}
-}
-
 func ListTablesAPI(w http.ResponseWriter, r *http.Request) {
 	tables, err := db.ListTables()
 	if err != nil {
