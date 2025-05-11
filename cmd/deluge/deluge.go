@@ -125,7 +125,6 @@ func AuthAndDownloadTorrent(torrentPath string) (interface{}, error) {
 
 	// Parse the download response
 	err = json.Unmarshal(body, &jsonResponse)
-	fmt.Println(&jsonResponse)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshaling download response: %w", err)
 	}
@@ -189,7 +188,7 @@ func AuthAndDownloadTorrent(torrentPath string) (interface{}, error) {
 	}
 
 	// Return the result (torrent added successfully)
-	fmt.Println(jsonResponse.Result)
+	fmt.Println(jsonResponse)
 	fmt.Println(jsonResponse.ID)
 	return jsonResponse.Result, nil
 }
