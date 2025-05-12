@@ -140,10 +140,7 @@ func DeleteTableAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateTableWithUser(w http.ResponseWriter, r *http.Request) {
-	var requestBody struct {
-		TableName string `json:"table_name"`
-		User      string `json:"username"`
-	}
+	var requestBody requestBody
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -181,12 +178,7 @@ func GetScoreAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateScoreForUserAPI(w http.ResponseWriter, r *http.Request) {
-	var requestBody struct {
-		TableName string `json:"table_name"`
-		User      string `json:"username"`
-		Score     int    `json:"score"`
-		Column    string `json:"column"`
-	}
+	var requestBody requestBody
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -214,14 +206,7 @@ func GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request) {
-	var requestBody struct {
-		TableName    string `json:"table_name"`
-		Answer       string `json:"answer"`
-		Column       string `json:"column"`
-		SecondColumn string `json:"second_column"`
-		NumInArray   int    `json:"numinarray"`
-	}
-
+	var requestBody requestBody
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
