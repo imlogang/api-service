@@ -17,6 +17,15 @@ type TorrentRequest struct {
 	} `json:"parameters"`
 }
 
+type requestBody struct {
+	TableName    string `json:"table_name"`
+	User         string `json:"username"`
+	Score        int    `json:"score"`
+	Column       string `json:"column"`
+	SecondColumn string `json:"second_column"`
+	NumInArray   int    `json:"numinarray"`
+}
+
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the request body and check for errors
 	bodyBytes, err := io.ReadAll(r.Body)
@@ -63,13 +72,7 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-// @Summary Says hello
-// @Description A simple Hello World endpoint
-// @Tags greetings
-// @Accept json
-// @Produce json
-// @Success 200 {string} string "Hello, World!"
-// @Router /api/private/hello [get]
+
 func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	// Write the response and check for any error, but discard 'n' as it's not needed
 	_, err := w.Write([]byte("Hello, World!"))
@@ -80,14 +83,6 @@ func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Health check endpoint
-// @Description Check the health status of the API
-// @Tags health
-// @Accept json
-// @Produce json
-// @Success 200 {string} string "OK"
-// @Failure 500 {string} string "Internal Server Error"
-// @Router /health [get]
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
@@ -107,9 +102,7 @@ func ListTablesAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateTableAPI(w http.ResponseWriter, r *http.Request) {
-	var requestBody struct {
-		TableName string `json:"table_name"`
-	}
+	var requestBody requestBody
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -128,9 +121,7 @@ func CreateTableAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteTableAPI(w http.ResponseWriter, r *http.Request) {
-	var requestBody struct {
-		TableName string `json:"table_name"`
-	}
+	var requestBody requestBody
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -222,7 +213,7 @@ func GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", pokemon)
 }
 
-func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request){ 
+func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request) {
 	var requestBody struct {
 		TableName    string `json:"table_name"`
 		Answer       string `json:"answer"`
@@ -234,20 +225,20 @@ func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
-		log.Fatalf("invalid request body: %s", err)
+		log.Printf("invalid request body: %s", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	sql, err := db.PutAnswerInDB(requestBody.TableName, requestBody.Answer, requestBody.Column, requestBody.SecondColumn, requestBody.NumInArray)
 	if err != nil {
-		log.Fatalf("could not put in database: %s", err)
+		log.Printf("could not put in database: %s", err)
 		http.Error(w, fmt.Sprintf(`{"error": "Invalid request body: %v"}`, err), http.StatusBadRequest)
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(map[string]string{"answer": sql}); err != nil {
-		log.Fatalf("error updating answer: %s", err)
+		log.Printf("error updating answer: %s", err)
 		http.Error(w, fmt.Sprintf(`{"error": "Error updating answer: %v"}`, err), http.StatusBadRequest)
 	}
 }
@@ -269,20 +260,20 @@ func ReadAnswerFromDBAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func LeaderboardAPI(w http.ResponseWriter, r *http.Request) {
-    fullURL := r.URL.String()
-    tableName := r.URL.Query().Get("tablename")
+	fullURL := r.URL.String()
+	tableName := r.URL.Query().Get("tablename")
 
-    if tableName == "" {
-        http.Error(w, fmt.Sprintf("Error: tableName cannot be empty. Received - tableName: %s\n The full URL: %s", tableName, fullURL), http.StatusBadRequest)
-        return
-    }
+	if tableName == "" {
+		http.Error(w, fmt.Sprintf("Error: tableName cannot be empty. Received - tableName: %s\n The full URL: %s", tableName, fullURL), http.StatusBadRequest)
+		return
+	}
 
-    leaderboard, err := db.GetLeaderboard(tableName)
-    if err != nil {
-        http.Error(w, fmt.Sprintf("Error retrieving leaderboard: %s", err), http.StatusInternalServerError)
-        return
-    }
-    
-    w.Header().Set("Content-Type", "text/plain")
-    fmt.Fprintf(w, "Leaderboard:\n%s", leaderboard)
+	leaderboard, err := db.GetLeaderboard(tableName)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error retrieving leaderboard: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	fmt.Fprintf(w, "Leaderboard:\n%s", leaderboard)
 }
