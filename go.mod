@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.2
 
 require (
-	github.com/go-chi/chi/v5 v5.2.1
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/lib/pq v1.10.9
 	github.com/mtslzr/pokeapi-go v1.4.0
