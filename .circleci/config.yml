@@ -50,10 +50,26 @@ jobs:
   test:
     docker:
       - image: cimg/go:1.24
+      - image: postgres:15
+        environment:
+          POSTGRES_DB: beemoviebot
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+    environment:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: beemoviebot
     parallelism: 2
     resource_class: medium
     steps:
       - checkout
+      - run:
+          name: Wait for DB
+          command: |
+            sudo apt-get update && sudo apt-get install -y postgresql-client
+            until pg_isready -h localhost -p 5432; do sleep 1; done
       - run:
           name: run all tests
           command: |

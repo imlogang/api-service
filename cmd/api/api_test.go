@@ -1,6 +1,9 @@
 package httpapi
 
 import (
+	"bytes"
+	"encoding/json"
+	"gotest.tools/v3/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -51,5 +54,31 @@ func TestHealthCheckHandler(t *testing.T) {
 	// Check if the status code is 200 OK
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("HealthCheckHandler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+}
+
+func TestAPI_CreateTable(t *testing.T) {
+	tests := []struct {
+		name    string
+		request requestBody
+	}{
+		{
+			name: "Beemoviebot Table",
+			request: requestBody{
+				TableName: "beemoviebot",
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			body, _ := json.Marshal(tt.request)
+
+			req := httptest.NewRequest("POST", "/api/private/create_table", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			CreateTableAPI(w, req)
+			assert.Equal(t, http.StatusOK, w.Code)
+		})
 	}
 }
