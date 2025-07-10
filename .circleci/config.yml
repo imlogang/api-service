@@ -1,4 +1,8 @@
 version: 2.1
+
+orbs:
+  go: circleci/go@3.0.2
+
 jobs:
   build-image:
     resource_class: large
@@ -69,10 +73,12 @@ jobs:
           name: Wait for DB
           command: |
             until pg_isready -h localhost -p 5432; do sleep 1; done
-      - run:
-          name: run all tests
-          command: |
-            cd cmd && go list ./...  | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname -- -v" --split-by=timings --timings-type=name
+      - go/with-cache:
+          steps:
+            - run:
+                name: run all tests
+                command: |
+                  cd cmd && go list ./...  | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname -- -v" --split-by=timings --timings-type=name
       - store_test_results:
           path: cmd/junit.xml
   
