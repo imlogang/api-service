@@ -68,6 +68,12 @@ func TestAPI_CreateTable(t *testing.T) {
 				TableName: "beemoviebot",
 			},
 		},
+		{
+			name: "Random Table",
+			request: requestBody{
+				TableName: "random_table",
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -79,6 +85,15 @@ func TestAPI_CreateTable(t *testing.T) {
 			w := httptest.NewRecorder()
 			CreateTableAPI(w, req)
 			assert.Equal(t, http.StatusOK, w.Code)
+
+			var response map[string]string
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				t.Fatalf("Failed to decode response: %v", err)
+			}
+			if _, exists := response["table_name_created"]; !exists {
+				t.Errorf("Response missing 'table_name_created' key. Got: %v", response)
+			}
 		})
 	}
 }
