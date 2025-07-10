@@ -24,6 +24,7 @@ type requestBody struct {
 	Column       string `json:"column"`
 	SecondColumn string `json:"second_column"`
 	NumInArray   int    `json:"numinarray"`
+	Answer       string `json:"answer"`
 }
 
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
