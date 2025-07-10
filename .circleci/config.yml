@@ -82,7 +82,7 @@ jobs:
       - store_test_results:
           path: cmd/junit.xml
       - store_artifacts:
-          path: cmd
+          path: cmd/junit.xml
           destination: junit.xml
   
   lint:
