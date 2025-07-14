@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"gotest.tools/v3/assert"
 	"net/http"
@@ -47,9 +48,12 @@ func TestHealthCheckHandler(t *testing.T) {
 	// Create a response recorder
 	rr := httptest.NewRecorder()
 
-	// Call the handler
-	handler := http.HandlerFunc(HealthCheckHandler)
-	handler.ServeHTTP(rr, req)
+	// Create an APIHandler instance with a context
+	ctx := context.Background()
+	apiHandler := NewAPIHandler(ctx) // or httpapi.NewAPIHandler(ctx) if in different package
+
+	// Call the handler method
+	apiHandler.HealthCheckHandler(rr, req)
 
 	// Check if the status code is 200 OK
 	if status := rr.Code; status != http.StatusOK {
