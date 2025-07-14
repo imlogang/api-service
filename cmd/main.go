@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/circleci/ex/o11y"
 	"go-api/cmd/api"
-	"go-api/cmd/db"
 	_ "go-api/cmd/docs"
 	"go-api/cmd/setup"
 	"log"
@@ -47,7 +46,7 @@ func main() {
 
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
-	http.HandleFunc("/health", httpapi.HealthCheckHandler)
+	http.HandleFunc("/health", apiHandler.HealthCheckHandler)
 
 	http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
 	http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
