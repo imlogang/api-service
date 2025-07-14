@@ -7,7 +7,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /go-api-service ./cmd/main
 
 # Start a new stage to build the final image
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates curl
+RUN apk --no-cache add ca-certificates curl tzdata
 WORKDIR /
 COPY --from=builder /go-api-service /go-api-service
 EXPOSE 8080
