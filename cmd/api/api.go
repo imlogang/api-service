@@ -205,11 +205,13 @@ func GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
 	pokemon, err := games.GetPokemon()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("there was an error finding your pokemon, %s", err), http.StatusInternalServerError)
+		return
 	}
-	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "%s\n", pokemon)
 
 	o11y.AddFieldToTrace(ctx, "pokemon", pokemon)
+
+	w.Header().Set("Content-Type", "text/plain")
+	fmt.Fprintf(w, "%s\n", pokemon)
 }
 
 func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request) {
