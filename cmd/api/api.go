@@ -3,6 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/circleci/ex/o11y"
 	"go-api/cmd/db"
 	"go-api/cmd/deluge"
 	"go-api/cmd/games"
@@ -198,12 +199,17 @@ func UpdateScoreForUserAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	ctx, span := o11y.StartSpan(ctx, "Get Pokemon")
+	defer span.End()
 	pokemon, err := games.GetPokemon()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("there was an error finding your pokemon, %s", err), http.StatusInternalServerError)
 	}
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintf(w, "%s\n", pokemon)
+
+	o11y.AddFieldToTrace(ctx, "pokemon", pokemon)
 }
 
 func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request) {

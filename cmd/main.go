@@ -34,7 +34,7 @@ func main() {
 
 	ctx, runSpan := o11y.StartSpan(ctx, "main: run")
 	defer o11y.End(runSpan, &err)
-
+	
 	location, err := time.LoadLocation("America/Chicago")
 	if err != nil {
 		log.Printf("error loading timezone: %s\n", err)
