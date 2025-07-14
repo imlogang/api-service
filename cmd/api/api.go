@@ -210,7 +210,6 @@ func UpdateScoreForUserAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIHandler) GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
 	ctx, span := o11y.StartSpan(h.ctx, "Get Pokemon")
 	defer span.End()
 	pokemon, err := games.GetPokemon()
