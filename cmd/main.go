@@ -49,13 +49,6 @@ func main() {
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
 
-	config := db.LoadConfig()
-	err = config.TestDBConnection()
-	if err != nil {
-		log.Fatal("Error testing DB connection:", err)
-		return
-	}
-
 	http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
 	http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
 	http.HandleFunc("/api/private/delete_table", httpapi.DeleteTableAPI)

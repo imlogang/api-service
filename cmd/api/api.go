@@ -96,7 +96,22 @@ func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+func (h *APIHandler) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := o11y.StartSpan(h.ctx, "Health Check")
+	defer span.End()
+
+	config := db.LoadConfig()
+	err := config.TestDBConnection()
+	if err != nil {
+		databaseError := fmt.Sprintf("database error: %s", err)
+		o11y.AddFieldToTrace(ctx, "health-check", databaseError)
+		o11y.AddFieldToTrace(ctx, "status", "unhealthy")
+		http.Error(w, "Database connection failed", http.StatusServiceUnavailable)
+		return
+	}
+
+	o11y.AddFieldToTrace(ctx, "health-check", "healthy")
+	o11y.AddFieldToTrace(ctx, "status", "healthy")
 	w.WriteHeader(http.StatusOK)
 }
 
