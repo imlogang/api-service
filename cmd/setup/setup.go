@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/circleci/ex/config/o11y"
 	"github.com/circleci/ex/config/secret"
+	"log"
 	"os"
 )
 
@@ -19,8 +20,10 @@ type Setup struct {
 }
 
 func O11ySetup() *Setup {
+	hcKey := os.Getenv("HC_KEY")
+	log.Printf("HC_KEY from env: %q (length: %d)", hcKey, len(hcKey))
 	cfg := &Setup{
-		O11yHoneycombKey:     secret.String(os.Getenv("HC_KEY")),
+		O11yHoneycombKey:     secret.String(hcKey),
 		O11yHoneycombEnabled: true,
 		O11yHoneycombHost:    "https://api.honeycomb.io",
 		O11yHoneycombDataset: "mickrok8s",
