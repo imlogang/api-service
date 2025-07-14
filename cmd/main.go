@@ -35,8 +35,8 @@ func main() {
 	ctx, runSpan := o11y.StartSpan(ctx, "main: run")
 	defer o11y.End(runSpan, &err)
 
-	o11y.Log(ctx, "starting artifacts-mmo game",
-		o11y.Field("date", time.DateOnly),
+	o11y.Log(ctx, "starting api-service",
+		o11y.Field("date", time.FixedZone("UTC-6", -6*3600)),
 	)
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
