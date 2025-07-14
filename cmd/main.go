@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/circleci/ex/config/secret"
 	"github.com/circleci/ex/o11y"
 	"go-api/cmd/api"
 	"go-api/cmd/db"
@@ -11,7 +10,6 @@ import (
 	"go-api/cmd/setup"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -45,7 +43,7 @@ func main() {
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
 
 	config := db.LoadConfig()
-	err := config.TestDBConnection()
+	err = config.TestDBConnection()
 	if err != nil {
 		log.Fatal("Error testing DB connection:", err)
 		return

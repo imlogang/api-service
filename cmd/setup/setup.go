@@ -18,7 +18,7 @@ type Setup struct {
 	StatsNamespace       string
 }
 
-func O11ySetup(hctoken string) *Setup {
+func O11ySetup() *Setup {
 	cfg := &Setup{
 		O11yHoneycombKey:     secret.String(os.Getenv("HC_KEY")),
 		O11yHoneycombEnabled: true,
