@@ -35,8 +35,12 @@ func main() {
 	ctx, runSpan := o11y.StartSpan(ctx, "main: run")
 	defer o11y.End(runSpan, &err)
 
+	location, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		log.Printf("error loading timezone: %s\n", err)
+	}
 	o11y.Log(ctx, "starting api-service",
-		o11y.Field("date", time.FixedZone("UTC-6", -6*3600)),
+		o11y.Field("date", time.Now().In(location)),
 	)
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
