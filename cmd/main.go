@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/circleci/ex/config/secret"
+	"github.com/circleci/ex/o11y"
 	"go-api/cmd/api"
 	"go-api/cmd/db"
 	_ "go-api/cmd/docs"
+	"go-api/cmd/setup"
 	"log"
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/swaggo/http-swagger"
+	"os"
+	"time"
 )
 
 // @title Logan's API
@@ -23,11 +26,20 @@ import (
 // @host api-service.logangodsey.com
 // @BasePath /api/private/
 func main() {
-	r := chi.NewRouter()
-	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
-	))
-	http.Handle("/docs/swagger.json", http.StripPrefix("/docs", http.FileServer(http.Dir("./cmd/docs"))))
+	cfg := setup.O11ySetup()
+	ctx := context.Background()
+	ctx, o11yCleanup, err := setup.LoadO11y(ctx, "ap-service", *cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer o11yCleanup(ctx)
+
+	ctx, runSpan := o11y.StartSpan(ctx, "main: run")
+	defer o11y.End(runSpan, &err)
+
+	o11y.Log(ctx, "starting artifacts-mmo game",
+		o11y.Field("date", time.DateOnly),
+	)
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
