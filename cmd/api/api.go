@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/circleci/ex/o11y"
@@ -18,6 +19,10 @@ type TorrentRequest struct {
 	} `json:"parameters"`
 }
 
+type APIHandler struct {
+	ctx context.Context
+}
+
 type requestBody struct {
 	TableName    string `json:"table_name"`
 	User         string `json:"username"`
@@ -26,6 +31,12 @@ type requestBody struct {
 	SecondColumn string `json:"second_column"`
 	NumInArray   int    `json:"numinarray"`
 	Answer       string `json:"answer"`
+}
+
+func NewAPIHandler(ctx context.Context) *APIHandler {
+	return &APIHandler{
+		ctx: ctx,
+	}
 }
 
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
@@ -198,9 +209,9 @@ func UpdateScoreForUserAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
+func (h *APIHandler) GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	ctx, span := o11y.StartSpan(ctx, "Get Pokemon")
+	ctx, span := o11y.StartSpan(h.ctx, "Get Pokemon")
 	defer span.End()
 	pokemon, err := games.GetPokemon()
 	if err != nil {

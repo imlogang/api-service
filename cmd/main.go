@@ -34,7 +34,7 @@ func main() {
 
 	ctx, runSpan := o11y.StartSpan(ctx, "main: run")
 	defer o11y.End(runSpan, &err)
-	
+
 	location, err := time.LoadLocation("America/Chicago")
 	if err != nil {
 		log.Printf("error loading timezone: %s\n", err)
@@ -42,6 +42,9 @@ func main() {
 	o11y.Log(ctx, "starting api-service",
 		o11y.Field("date", time.Now().In(location)),
 	)
+
+	apiHandler := httpapi.NewAPIHandler(ctx)
+
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
 	http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
 	http.HandleFunc("/health", httpapi.HealthCheckHandler)
@@ -59,7 +62,7 @@ func main() {
 	http.HandleFunc("/api/private/update_table_with_user", httpapi.UpdateTableWithUser)
 	http.HandleFunc("/api/private/get_current_score", httpapi.GetScoreAPI)
 	http.HandleFunc("/api/private/update_user_score", httpapi.UpdateScoreForUserAPI)
-	http.HandleFunc("/api/private/get_pokemon", httpapi.GetPokemonAPI)
+	http.HandleFunc("/api/private/get_pokemon", apiHandler.GetPokemonAPI)
 	http.HandleFunc("/api/private/put_answer", httpapi.PutAnswerInDBAPI)
 	http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
 	http.HandleFunc("/api/private/leaderboard", httpapi.LeaderboardAPI)
