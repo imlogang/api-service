@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/lib/pq v1.10.9
 	github.com/mtslzr/pokeapi-go v1.4.0
-	github.com/swaggo/swag v1.16.4
+	github.com/swaggo/swag v1.16.5
 	gotest.tools/v3 v3.5.2
 )
 
