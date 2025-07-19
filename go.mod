@@ -2,7 +2,7 @@ module go-api
 
 go 1.23.0
 
-toolchain go1.24.2
+toolchain go1.24.5
 
 require (
 	github.com/circleci/ex v1.0.16628-839946e
