@@ -92,6 +92,7 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
+	fmt.Println("We made it into the Handler!")
 	c.JSON(http.StatusOK, returnBody{Hello: "Hello world!"})
 }
 

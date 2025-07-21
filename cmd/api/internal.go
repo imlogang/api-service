@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"github.com/circleci/ex/httpserver/ginrouter"
+	"github.com/circleci/ex/o11y"
 	"github.com/circleci/ex/o11y/wrappers/o11ygin"
 	"github.com/gin-gonic/gin"
 )
@@ -16,7 +17,7 @@ func New(ctx context.Context) (*API, error) {
 	r.Use(o11ygin.ClientCancelled())
 
 	a := &API{Router: r}
-
+	o11y.Log(ctx, "New Internal router is called")
 	r.GET("/api/private/hello", a.HelloWorldHandler)
 
 	return a, nil
