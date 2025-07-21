@@ -117,7 +117,7 @@ func loadInternal(ctx context.Context, cli cli, sys *system.System) error {
 
 	_, err = httpserver.Load(ctx, httpserver.Config{
 		Name:    "internalapi",
-		Addr:    "8082",
+		Addr:    ":8082",
 		Handler: a.Handler(),
 	}, sys)
 
