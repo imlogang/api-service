@@ -99,7 +99,7 @@ func (a *API) HelloWorldHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, "Hello World")
+	c.JSON(http.StatusOK, returnBody{Hello: "Hello world!"})
 }
 
 func (h *APIHandler) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
