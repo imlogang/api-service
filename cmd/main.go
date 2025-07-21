@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/circleci/ex/httpserver"
 	"github.com/circleci/ex/httpserver/healthcheck"
 	"github.com/circleci/ex/termination"
@@ -11,7 +10,6 @@ import (
 	_ "go-api/cmd/docs"
 	"go-api/cmd/setup"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/circleci/ex/o11y"
@@ -41,27 +39,27 @@ func main() {
 		log.Fatal("Unexpected Error: ", err)
 	}
 	log.Println("exited 0")
-	apiHandler := httpapi.NewAPIHandler(ctx)
-
-	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
-	//http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
-	//http.HandleFunc("/health", apiHandler.HealthCheckHandler)
-
-	http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
-	http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
-	http.HandleFunc("/api/private/delete_table", httpapi.DeleteTableAPI)
-	http.HandleFunc("/api/private/update_table_with_user", httpapi.UpdateTableWithUser)
-	http.HandleFunc("/api/private/get_current_score", httpapi.GetScoreAPI)
-	http.HandleFunc("/api/private/update_user_score", httpapi.UpdateScoreForUserAPI)
-	http.HandleFunc("/api/private/get_pokemon", apiHandler.GetPokemonAPI)
-	http.HandleFunc("/api/private/put_answer", httpapi.PutAnswerInDBAPI)
-	http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
-	http.HandleFunc("/api/private/leaderboard", httpapi.LeaderboardAPI)
-
-	// Start the server
-	fmt.Println("Server started on http://localhost:8080")
-	fmt.Println("You can also connect via http://go-api-service.go-api.svc.cluster.local:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	//apiHandler := httpapi.NewAPIHandler(ctx)
+	//
+	//http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
+	////http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
+	////http.HandleFunc("/health", apiHandler.HealthCheckHandler)
+	//
+	//http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
+	//http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
+	//http.HandleFunc("/api/private/delete_table", httpapi.DeleteTableAPI)
+	//http.HandleFunc("/api/private/update_table_with_user", httpapi.UpdateTableWithUser)
+	//http.HandleFunc("/api/private/get_current_score", httpapi.GetScoreAPI)
+	//http.HandleFunc("/api/private/update_user_score", httpapi.UpdateScoreForUserAPI)
+	//http.HandleFunc("/api/private/get_pokemon", apiHandler.GetPokemonAPI)
+	//http.HandleFunc("/api/private/put_answer", httpapi.PutAnswerInDBAPI)
+	//http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
+	//http.HandleFunc("/api/private/leaderboard", httpapi.LeaderboardAPI)
+	//
+	//// Start the server
+	//fmt.Println("Server started on http://localhost:8080")
+	//fmt.Println("You can also connect via http://go-api-service.go-api.svc.cluster.local:8080")
+	//log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
 
