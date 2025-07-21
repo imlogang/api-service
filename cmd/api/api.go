@@ -34,6 +34,10 @@ type requestBody struct {
 	Answer       string `json:"answer"`
 }
 
+type returnBody struct {
+	Hello string `json:"hello"`
+}
+
 func NewAPIHandler(ctx context.Context) *APIHandler {
 	return &APIHandler{
 		ctx: ctx,
@@ -88,12 +92,14 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
-	ctx := c.Request.Context()
-	_, err := w.Write([]byte("Hello, World!"))
+	var req requestBody
+	err := c.BindJSON(&req)
 	if err != nil {
-		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
+
+	c.JSON(http.StatusOK, "Hello World")
 }
 
 func (h *APIHandler) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
