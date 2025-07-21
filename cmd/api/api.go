@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/circleci/ex/o11y"
+	"github.com/gin-gonic/gin"
 	"go-api/cmd/db"
 	"go-api/cmd/deluge"
 	"go-api/cmd/games"
@@ -86,11 +87,10 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	// Write the response and check for any error, but discard 'n' as it's not needed
+func (a *API) HelloWorldHandler(c *gin.Context) {
+	ctx := c.Request.Context()
 	_, err := w.Write([]byte("Hello, World!"))
 	if err != nil {
-		// If there is an error, return an internal server error response
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 		return
 	}
