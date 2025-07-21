@@ -19,8 +19,9 @@ import (
 )
 
 type cli struct {
-	APIAddr       string        `long:"api-addr" default:":8081" description:"api addr"`
-	ShutdownDelay time.Duration `long:"shutdown-delay" default:"30s" description:"shutdown delay"`
+	APIAddr            string        `long:"api-addr" default:":8082" description:"api addr"`
+	HealthcheckAPIAddr string        `long:"api-addr" default:":8081" description:"api addr for healthchecks"`
+	ShutdownDelay      time.Duration `long:"shutdown-delay" default:"30s" description:"shutdown delay"`
 }
 
 // @title Logan's API
@@ -94,7 +95,10 @@ func run(ctx context.Context, location *time.Location) (err error) {
 		return err
 	}
 
-	_, err = healthcheck.Load(ctx, ":8081", sys)
+	o11y.Log(ctx, "health checks are loaded",
+		o11y.Field("date", time.Now().In(location)),
+	)
+	_, err = healthcheck.Load(ctx, cli.HealthcheckAPIAddr, sys)
 	if err != nil {
 		return err
 	}
@@ -107,9 +111,12 @@ func loadInternal(ctx context.Context, cli cli, sys *system.System) error {
 	if err != nil {
 		return err
 	}
+
+	o11y.Log(ctx, "loading the httpserver with gin on port")
+
 	_, err = httpserver.Load(ctx, httpserver.Config{
 		Name:    "internalapi",
-		Addr:    ":8082",
+		Addr:    cli.APIAddr,
 		Handler: a.Handler(),
 	}, sys)
 
