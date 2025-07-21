@@ -21,3 +21,7 @@ func New(ctx context.Context) (*API, error) {
 
 	return a, nil
 }
+
+func (a *API) Handler() *gin.Engine {
+	return a.Router
+}
