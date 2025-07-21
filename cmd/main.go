@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/circleci/ex/httpserver"
+	"github.com/circleci/ex/httpserver/healthcheck"
 	"github.com/circleci/ex/termination"
 	"go-api/cmd/api"
 	_ "go-api/cmd/docs"
@@ -61,6 +62,7 @@ func main() {
 	fmt.Println("Server started on http://localhost:8080")
 	fmt.Println("You can also connect via http://go-api-service.go-api.svc.cluster.local:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
+
 }
 
 func run(ctx context.Context) (err error) {
@@ -87,6 +89,11 @@ func run(ctx context.Context) (err error) {
 	defer sys.Cleanup(ctx)
 
 	err = loadInternal(ctx, cli, sys)
+	if err != nil {
+		return err
+	}
+
+	_, err = healthcheck.Load(ctx, cli.APIAddr, sys)
 	if err != nil {
 		return err
 	}
