@@ -92,7 +92,7 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
-	var req requestBody
+	var req returnBody
 	err := c.BindJSON(&req)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
