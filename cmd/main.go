@@ -33,11 +33,13 @@ type cli struct {
 // @host api-service.logangodsey.com
 // @BasePath /api/private/
 func main() {
-
 	ctx := context.Background()
 
-	run(ctx)
-
+	err := run(ctx)
+	if err != nil && !errors.Is(err, termination.ErrTerminated) {
+		log.Fatal("Unexpected Error: ", err)
+	}
+	log.Println("exited 0")
 	apiHandler := httpapi.NewAPIHandler(ctx)
 
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
@@ -54,12 +56,6 @@ func main() {
 	http.HandleFunc("/api/private/put_answer", httpapi.PutAnswerInDBAPI)
 	http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
 	http.HandleFunc("/api/private/leaderboard", httpapi.LeaderboardAPI)
-
-	err := run(ctx)
-	if err != nil && !errors.Is(err, termination.ErrTerminated) {
-		log.Fatal("Unexpected Error: ", err)
-	}
-	log.Println("exited 0")
 
 	// Start the server
 	fmt.Println("Server started on http://localhost:8080")
