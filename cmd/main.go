@@ -45,7 +45,7 @@ func main() {
 
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
 	//http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
-	http.HandleFunc("/health", apiHandler.HealthCheckHandler)
+	//http.HandleFunc("/health", apiHandler.HealthCheckHandler)
 
 	http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
 	http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
