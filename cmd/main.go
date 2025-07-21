@@ -35,11 +35,17 @@ type cli struct {
 // @BasePath /api/private/
 func main() {
 	ctx := context.Background()
-
 	location, err := time.LoadLocation("America/Chicago")
 	if err != nil {
 		log.Printf("error loading timezone: %s\n", err)
 	}
+
+	go func() {
+		err := run(ctx, location)
+		if err != nil && !errors.Is(err, termination.ErrTerminated) {
+			log.Fatal("Unexpected Error: ", err)
+		}
+	}()
 
 	apiHandler := httpapi.NewAPIHandler(ctx)
 
@@ -58,17 +64,6 @@ func main() {
 	http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
 	http.HandleFunc("/api/private/leaderboard", httpapi.LeaderboardAPI)
 
-	o11y.Log(ctx, "all routes are ready",
-		o11y.Field("date", time.Now().In(location)),
-	)
-
-	go func() {
-		err = run(ctx, location)
-		if err != nil && !errors.Is(err, termination.ErrTerminated) {
-			log.Fatal("Unexpected Error: ", err)
-		}
-	}()
-
 	//Start the server
 	fmt.Println("Server started on http://localhost:8080")
 	fmt.Println("You can also connect via http://go-api-service.go-api.svc.cluster.local:8080")
@@ -79,7 +74,6 @@ func main() {
 func run(ctx context.Context, location *time.Location) (err error) {
 	cli := cli{}
 	cfg := setup.O11ySetup()
-
 	ctx, o11yCleanup, err := setup.LoadO11y(ctx, "api-service", *cfg)
 	if err != nil {
 		log.Fatal(err)
@@ -118,5 +112,8 @@ func loadInternal(ctx context.Context, cli cli, sys *system.System) error {
 		Addr:    cli.APIAddr,
 		Handler: a.Handler(),
 	}, sys)
+
+	o11y.Log(ctx, "all gin routes are ready")
+
 	return err
 }
