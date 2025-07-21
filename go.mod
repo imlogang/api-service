@@ -44,6 +44,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
+	github.com/hellofresh/health-go/v5 v5.5.5 // indirect
 	github.com/honeycombio/beeline-go v1.19.0 // indirect
 	github.com/honeycombio/dynsampler-go v0.6.0 // indirect
 	github.com/honeycombio/libhoney-go v1.25.0 // indirect
