@@ -91,12 +91,12 @@ func run(ctx context.Context) (err error) {
 		return err
 	}
 
-	_, err = healthcheck.Load(ctx, cli.APIAddr, sys)
+	_, err = healthcheck.Load(ctx, ":8081", sys)
 	if err != nil {
 		return err
 	}
 
-	return sys.Run(ctx, cli.ShutdownDelay)
+	return sys.Run(ctx, 0)
 }
 
 func loadInternal(ctx context.Context, cli cli, sys *system.System) error {
