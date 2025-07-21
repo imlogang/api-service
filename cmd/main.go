@@ -19,7 +19,7 @@ import (
 )
 
 type cli struct {
-	APIAddr       string        `long:"api-addr" default:":8080" description:"api addr"`
+	APIAddr       string        `long:"api-addr" default:":8081" description:"api addr"`
 	ShutdownDelay time.Duration `long:"shutdown-delay" default:"5s" description:"shutdown delay"`
 }
 
