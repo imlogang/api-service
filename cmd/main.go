@@ -41,7 +41,6 @@ func main() {
 		log.Printf("error loading timezone: %s\n", err)
 	}
 
-	log.Println("exited 0")
 	apiHandler := httpapi.NewAPIHandler(ctx)
 
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
@@ -63,10 +62,12 @@ func main() {
 		o11y.Field("date", time.Now().In(location)),
 	)
 
-	err = run(ctx, location)
-	if err != nil && !errors.Is(err, termination.ErrTerminated) {
-		log.Fatal("Unexpected Error: ", err)
-	}
+	go func() {
+		err = run(ctx, location)
+		if err != nil && !errors.Is(err, termination.ErrTerminated) {
+			log.Fatal("Unexpected Error: ", err)
+		}
+	}()
 
 	//Start the server
 	fmt.Println("Server started on http://localhost:8080")

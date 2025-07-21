@@ -10,5 +10,5 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates curl tzdata
 WORKDIR /
 COPY --from=builder /go-api-service /go-api-service
-EXPOSE 8080
+EXPOSE 8080-8081
 ENTRYPOINT ["/go-api-service"]
