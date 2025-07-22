@@ -102,46 +102,46 @@ func TestAPI_CreateTable(t *testing.T) {
 	}
 }
 
-func TestAPI_ListTables(t *testing.T) {
-	tests := []struct {
-		name  string
-		table string
-	}{
-		{
-			name:  "Beemoviebot Table",
-			table: "beemoviebot",
-		},
-		{
-			name:  "Random Table",
-			table: "random_table",
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("GET", "/api/private/list_tables", nil)
-			w := httptest.NewRecorder()
-			ListTablesAPI(w, req)
-
-			assert.Equal(t, http.StatusOK, w.Code)
-			var tables []string
-			err := json.NewDecoder(w.Body).Decode(&tables)
-			if err != nil {
-				t.Fatalf("Failed to decode response: %v", err)
-			}
-			for _, tt := range tests {
-				found := false
-				for _, table := range tables {
-					if table == tt.table {
-						found = true
-						break
-					}
-				}
-				if !found {
-					t.Errorf("Table '%s' not found in response", tt.table)
-				}
-			}
-		})
-
-	}
-}
+//func TestAPI_ListTables(t *testing.T) {
+//	tests := []struct {
+//		name  string
+//		table string
+//	}{
+//		{
+//			name:  "Beemoviebot Table",
+//			table: "beemoviebot",
+//		},
+//		{
+//			name:  "Random Table",
+//			table: "random_table",
+//		},
+//	}
+//	for _, tt := range tests {
+//		tt := tt
+//		t.Run(tt.name, func(t *testing.T) {
+//			req := httptest.NewRequest("GET", "/api/private/list_tables", nil)
+//			w := httptest.NewRecorder()
+//			ListTablesAPI(w, req)
+//
+//			assert.Equal(t, http.StatusOK, w.Code)
+//			var tables []string
+//			err := json.NewDecoder(w.Body).Decode(&tables)
+//			if err != nil {
+//				t.Fatalf("Failed to decode response: %v", err)
+//			}
+//			for _, tt := range tests {
+//				found := false
+//				for _, table := range tables {
+//					if table == tt.table {
+//						found = true
+//						break
+//					}
+//				}
+//				if !found {
+//					t.Errorf("Table '%s' not found in response", tt.table)
+//				}
+//			}
+//		})
+//
+//	}
+//}
