@@ -116,11 +116,16 @@ func (h *APIHandler) HealthCheckHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *API) ListTablesHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	tables, err := db.ListTables()
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
+
+	o11y.AddFieldToTrace(ctx, "list-tables", tables)
+	o11y.AddFieldToTrace(ctx, "request remoteaddr", c.Request.RemoteAddr)
 
 	c.JSON(http.StatusOK, returnBody{Tables: tables})
 }
