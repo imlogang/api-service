@@ -66,7 +66,7 @@ jobs:
       POSTGRES_PASSWORD: test
       POSTGRES_DB: beemoviebot
     parallelism: 1
-    resource_class: medium
+    resource_class: medium+
     steps:
       - checkout
       - run:
@@ -89,7 +89,7 @@ jobs:
   lint:
     docker:
       - image: cimg/go:1.24
-    resource_class: medium
+    resource_class: medium+
     steps:
       - checkout
       - run: 
