@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/jackc/pgx"
-	_ "github.com/lib/pq"
 )
 
 type Config struct {
@@ -126,7 +125,7 @@ func CreateTable(tableName string) (string, error) {
 	return fmt.Sprintf(`%s succesfully created.`, tableName), nil
 }
 
-func checkIfTableExists(tableName string) (error) {
+func checkIfTableExists(tableName string) error {
 	if tableName == "" {
 		return fmt.Errorf("the table: %s must not be empty", tableName)
 	}
@@ -202,7 +201,7 @@ func addColumnIfNotExistsAnswerTable(tableName string, column string, secondColu
 	if tableName == "" || column == "" || secondColumn == "" {
 		return fmt.Errorf("tablename: %s, column: %s, or secondColumn: %s cannot be empty", tableName, column, secondColumn)
 	}
-	
+
 	config := LoadConfig()
 	DB, err := config.Connect()
 	if err != nil {
@@ -228,7 +227,7 @@ func addColumnIfNotExistsAnswerTable(tableName string, column string, secondColu
 }
 
 func AddUserIfNotExist(tableName string, username string) (string, error) {
-	if tableName == "" || username == ""{
+	if tableName == "" || username == "" {
 		return "", fmt.Errorf("tablename: %s, and username: %s, cannot be empty", tableName, username)
 	}
 	config := LoadConfig()
@@ -257,12 +256,12 @@ func AddUserIfNotExist(tableName string, username string) (string, error) {
 
 }
 
-func UpdateTableWithUser(tableName string, username string,) (string, error) {
+func UpdateTableWithUser(tableName string, username string) (string, error) {
 	err := AddColumnsIfNotExists(tableName)
 	if err != nil {
 		return "", fmt.Errorf("error ensuring columns: %v", err)
 	}
-	
+
 	config := LoadConfig()
 	DB, err := config.Connect()
 	if err != nil {
@@ -307,7 +306,7 @@ func GetCurrentScore(tableName string, username string) (int, error) {
 			}
 			return 0, nil
 		}
-		return 0,fmt.Errorf("there was an error finding the score for a username. %s", err)
+		return 0, fmt.Errorf("there was an error finding the score for a username. %s", err)
 	}
 	return score, nil
 }
@@ -392,29 +391,29 @@ func GetLeaderboard(tableName string) (string, error) {
 
 	sql := fmt.Sprintf(`SELECT "USERNAME", "SCORE" FROM %s ORDER BY "SCORE" DESC LIMIT 10;`, tableName)
 	rows, err := DB.Query(sql)
-    if err != nil {
-        return "", fmt.Errorf("error executing query: %s", err)
-    }
-    defer rows.Close()
+	if err != nil {
+		return "", fmt.Errorf("error executing query: %s", err)
+	}
+	defer rows.Close()
 
-    var leaderboard string
-    for rows.Next() {
-        var username string
-        var score int
-        err := rows.Scan(&username, &score)
-        if err != nil {
-            return "", fmt.Errorf("error scanning row: %s", err)
-        }
-        leaderboard += fmt.Sprintf("Username: %s, Score: %d\n", username, score)
-    }
+	var leaderboard string
+	for rows.Next() {
+		var username string
+		var score int
+		err := rows.Scan(&username, &score)
+		if err != nil {
+			return "", fmt.Errorf("error scanning row: %s", err)
+		}
+		leaderboard += fmt.Sprintf("Username: %s, Score: %d\n", username, score)
+	}
 
 	if err = rows.Err(); err != nil {
-        return "", fmt.Errorf("error iterating through rows: %s", err)
-    }
+		return "", fmt.Errorf("error iterating through rows: %s", err)
+	}
 
-    if leaderboard == "" {
-        return "No leaderboard data found.", nil
-    }
+	if leaderboard == "" {
+		return "No leaderboard data found.", nil
+	}
 
 	return leaderboard, nil
 }
