@@ -29,6 +29,7 @@ func TestAPI_HelloWorldHandler(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a, err := New(ctx)
+			assert.NilError(t, err)
 			w := httptest.NewRecorder()
 			u, err := url.Parse("http://localhost:8082/api/private/hello")
 			assert.NilError(t, err)
