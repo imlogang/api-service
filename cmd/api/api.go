@@ -38,6 +38,7 @@ type returnBody struct {
 	Hello        string   `json:"hello,omitempty"`
 	Tables       []string `json:"tables,omitempty"`
 	TableCreated string   `json:"table_created,omitempty"`
+	TableDeleted string   `json:"table_deleted,omitempty"`
 }
 
 func NewAPIHandler(ctx context.Context) *APIHandler {
@@ -137,7 +138,8 @@ func (a *API) CreateTableHandler(c *gin.Context) {
 
 	err := c.BindJSON(&requestBody)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "invalid body")
+		err = fmt.Errorf("invalid body: %s", err)
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("invalid body: %s", err))
 		return
 	}
 
@@ -153,26 +155,31 @@ func (a *API) CreateTableHandler(c *gin.Context) {
 	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
 
 	c.Header("Content-Type", "application/json")
-	c.JSON(http.StatusOK, returnBody{TableCreated: sql})
+	c.JSON(http.StatusOK, returnBody{TableCreated: requestBody.TableName})
 }
 
-func DeleteTableAPI(w http.ResponseWriter, r *http.Request) {
+func (a *API) DeleteTableHandler(c *gin.Context) {
 	var requestBody requestBody
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	ctx := c.Request.Context()
+	err := c.BindJSON(&requestBody)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("invalid body: %s", err))
 		return
 	}
+
 	sql, err := db.DeleteTable(requestBody.TableName)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
+		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error deleting table: %s", err))
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(map[string]string{"table_name_deleted": sql}); err != nil {
-		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
-	}
+
+	ctx, createTableSpan := o11y.StartSpan(ctx, "CreateTableHandler")
+	defer o11y.End(createTableSpan, &err)
+	o11y.AddFieldToTrace(ctx, "delete-tables", sql)
+	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
+
+	c.Header("Content-Type", "application/json")
+	c.JSON(http.StatusOK, returnBody{TableDeleted: requestBody.TableName})
 }
 
 func UpdateTableWithUser(w http.ResponseWriter, r *http.Request) {
