@@ -125,7 +125,7 @@ func (a *API) ListTablesHandler(c *gin.Context) {
 	}
 
 	o11y.AddFieldToTrace(ctx, "list-tables", tables)
-	o11y.AddFieldToTrace(ctx, "request remoteaddr", c.Request.RemoteAddr)
+	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
 
 	c.JSON(http.StatusOK, returnBody{Tables: tables})
 }
