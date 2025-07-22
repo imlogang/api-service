@@ -35,8 +35,8 @@ type requestBody struct {
 }
 
 type returnBody struct {
-	Hello  string   `json:"hello"`
-	Tables []string `json:"tables"`
+	Hello  string   `json:"hello,omitempty"`
+	Tables []string `json:"tables,omitempty"`
 }
 
 func NewAPIHandler(ctx context.Context) *APIHandler {
