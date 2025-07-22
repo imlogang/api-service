@@ -65,7 +65,7 @@ jobs:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
       POSTGRES_DB: beemoviebot
-    parallelism: 2
+    parallelism: 1
     resource_class: medium
     steps:
       - checkout
@@ -78,7 +78,8 @@ jobs:
             - run:
                 name: run all tests
                 command: |
-                  cd cmd && go list ./...  | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname -- -v" --split-by=timings --timings-type=name
+                  cd cmd && go list ./...  | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname -- -v"
+                #--split-by=timings --timings-type=name
       - store_test_results:
           path: cmd/junit.xml
       - store_artifacts:

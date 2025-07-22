@@ -2,37 +2,47 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/circleci/ex/testing/testcontext"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
-// Test HelloWorldHandler
-//func TestHelloWorldHandler(t *testing.T) {
-//	// Create a request to pass to the handler
-//	req, err := http.NewRequest("GET", "/api/private/hello", nil)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	// Create a response recorder to record the response
-//	rr := httptest.NewRecorder()
-//
-//	// Call the handler
-//	handler := http.HandlerFunc(HelloWorldHandler)
-//	handler.ServeHTTP(rr, req)
-//
-//	// Check the status code
-//	if status := rr.Code; status != http.StatusOK {
-//		t.Errorf("HelloWorldHandler returned wrong status code: got %v want %v", status, http.StatusOK)
-//	}
-//
-//	// Check the response body
-//	expected := "Hello, World!"
-//	if rr.Body.String() != expected {
-//		t.Errorf("HelloWorldHandler returned wrong body: got %v want %v", rr.Body.String(), expected)
-//	}
-//}
+func TestAPI_HelloWorldHandler(t *testing.T) {
+	ctx := testcontext.Background()
+	tests := []struct {
+		name         string
+		expectedResp returnBody
+	}{
+		{
+			name: "Hello world Handler",
+			expectedResp: returnBody{
+				Hello: "Hello world!",
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a, err := New(ctx)
+			w := httptest.NewRecorder()
+			u, err := url.Parse("http://localhost:8082/api/private/hello")
+			assert.NilError(t, err)
+
+			req := httptest.NewRequest("GET", u.String(), nil)
+			a.Router.ServeHTTP(w, req)
+
+			var resp returnBody
+			err = json.NewDecoder(w.Body).Decode(&resp)
+			assert.NilError(t, err)
+			assert.Check(t, cmp.DeepEqual(resp, tt.expectedResp))
+		})
+	}
+}
 
 // Test HealthCheckHandler
 func TestHealthCheckHandler(t *testing.T) {

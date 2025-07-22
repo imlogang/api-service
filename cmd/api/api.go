@@ -173,7 +173,7 @@ func (a *API) DeleteTableHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, createTableSpan := o11y.StartSpan(ctx, "CreateTableHandler")
+	ctx, createTableSpan := o11y.StartSpan(ctx, "DeleteTableHandler")
 	defer o11y.End(createTableSpan, &err)
 	o11y.AddFieldToTrace(ctx, "delete-tables", sql)
 	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
