@@ -35,7 +35,8 @@ type requestBody struct {
 }
 
 type returnBody struct {
-	Hello string `json:"hello"`
+	Hello  string   `json:"hello"`
+	Tables []string `json:"tables"`
 }
 
 func NewAPIHandler(ctx context.Context) *APIHandler {
@@ -92,7 +93,6 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
-	fmt.Println("We made it into the Handler!")
 	c.JSON(http.StatusOK, returnBody{Hello: "Hello world!"})
 }
 
@@ -115,18 +115,14 @@ func (h *APIHandler) HealthCheckHandler(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 }
 
-func ListTablesAPI(w http.ResponseWriter, r *http.Request) {
+func (a *API) ListTablesHandler(c *gin.Context) {
 	tables, err := db.ListTables()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error listing tables: %v", err), http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	// Return the tables as a JSON response
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(tables); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode tables: %v", err), http.StatusInternalServerError)
-	}
+	c.JSON(http.StatusOK, returnBody{Tables: tables})
 }
 
 func CreateTableAPI(w http.ResponseWriter, r *http.Request) {

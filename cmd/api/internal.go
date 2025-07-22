@@ -19,6 +19,7 @@ func New(ctx context.Context) (*API, error) {
 	a := &API{Router: r}
 	o11y.Log(ctx, "New Internal router is called")
 	r.GET("/api/private/hello", a.HelloWorldHandler)
+	r.GET("/api/private/list_tables", a.ListTablesHandler)
 
 	return a, nil
 }

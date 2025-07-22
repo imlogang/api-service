@@ -54,7 +54,7 @@ func main() {
 	//http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
 	//http.HandleFunc("/health", apiHandler.HealthCheckHandler)
 
-	http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
+	//http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
 	http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
 	http.HandleFunc("/api/private/delete_table", httpapi.DeleteTableAPI)
 	http.HandleFunc("/api/private/update_table_with_user", httpapi.UpdateTableWithUser)
