@@ -102,7 +102,7 @@ func run(ctx context.Context, location *time.Location) (err error) {
 	)
 	o11yMessage := fmt.Sprintf("loading the healthchecks with gin on port: %s", cli.HealthcheckAPIAddr)
 	o11y.Log(ctx, o11yMessage)
-	_, err = healthcheck.Load(ctx, ":8081", sys)
+	_, err = healthcheck.Load(ctx, cli.HealthcheckAPIAddr, sys)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func loadInternal(ctx context.Context, cli cli, sys *system.System) error {
 
 	_, err = httpserver.Load(ctx, httpserver.Config{
 		Name:    "internalapi",
-		Addr:    ":8082",
+		Addr:    cli.APIAddr,
 		Handler: a.Handler(),
 	}, sys)
 
