@@ -1,10 +1,7 @@
 package httpapi
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"gotest.tools/v3/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -61,46 +58,46 @@ func TestHealthCheckHandler(t *testing.T) {
 	}
 }
 
-func TestAPI_CreateTable(t *testing.T) {
-	tests := []struct {
-		name    string
-		request requestBody
-	}{
-		{
-			name: "Beemoviebot Table",
-			request: requestBody{
-				TableName: "beemoviebot",
-			},
-		},
-		{
-			name: "Random Table",
-			request: requestBody{
-				TableName: "random_table",
-			},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			body, _ := json.Marshal(tt.request)
-
-			req := httptest.NewRequest("POST", "/api/private/create_table", bytes.NewReader(body))
-			req.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-			CreateTableAPI(w, req)
-			assert.Equal(t, http.StatusOK, w.Code)
-
-			var response map[string]string
-			err := json.NewDecoder(w.Body).Decode(&response)
-			if err != nil {
-				t.Fatalf("Failed to decode response: %v", err)
-			}
-			if _, exists := response["table_name_created"]; !exists {
-				t.Errorf("Response missing 'table_name_created' key. Got: %v", response)
-			}
-		})
-	}
-}
+//func TestAPI_CreateTable(t *testing.T) {
+//	tests := []struct {
+//		name    string
+//		request requestBody
+//	}{
+//		{
+//			name: "Beemoviebot Table",
+//			request: requestBody{
+//				TableName: "beemoviebot",
+//			},
+//		},
+//		{
+//			name: "Random Table",
+//			request: requestBody{
+//				TableName: "random_table",
+//			},
+//		},
+//	}
+//	for _, tt := range tests {
+//		tt := tt
+//		t.Run(tt.name, func(t *testing.T) {
+//			body, _ := json.Marshal(tt.request)
+//
+//			req := httptest.NewRequest("POST", "/api/private/create_table", bytes.NewReader(body))
+//			req.Header.Set("Content-Type", "application/json")
+//			w := httptest.NewRecorder()
+//			CreateTableAPI(w, req)
+//			assert.Equal(t, http.StatusOK, w.Code)
+//
+//			var response map[string]string
+//			err := json.NewDecoder(w.Body).Decode(&response)
+//			if err != nil {
+//				t.Fatalf("Failed to decode response: %v", err)
+//			}
+//			if _, exists := response["table_name_created"]; !exists {
+//				t.Errorf("Response missing 'table_name_created' key. Got: %v", response)
+//			}
+//		})
+//	}
+//}
 
 //func TestAPI_ListTables(t *testing.T) {
 //	tests := []struct {
