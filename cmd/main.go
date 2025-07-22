@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/alecthomas/kong"
 	"github.com/circleci/ex/httpserver"
 	"github.com/circleci/ex/httpserver/healthcheck"
 	"github.com/circleci/ex/termination"
@@ -74,6 +75,7 @@ func main() {
 
 func run(ctx context.Context, location *time.Location) (err error) {
 	cli := cli{}
+	kong.Parse(&cli)
 	cfg := setup.O11ySetup()
 	ctx, o11yCleanup, err := setup.LoadO11y(ctx, "api-service", *cfg)
 	if err != nil {
@@ -98,6 +100,8 @@ func run(ctx context.Context, location *time.Location) (err error) {
 	o11y.Log(ctx, "health checks are loaded",
 		o11y.Field("date", time.Now().In(location)),
 	)
+	o11yMessage := fmt.Sprintf("loading the healthchecks with gin on port: %s", cli.HealthcheckAPIAddr)
+	o11y.Log(ctx, o11yMessage)
 	_, err = healthcheck.Load(ctx, ":8081", sys)
 	if err != nil {
 		return err
