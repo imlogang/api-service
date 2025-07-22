@@ -35,8 +35,9 @@ type requestBody struct {
 }
 
 type returnBody struct {
-	Hello  string   `json:"hello,omitempty"`
-	Tables []string `json:"tables,omitempty"`
+	Hello        string   `json:"hello,omitempty"`
+	Tables       []string `json:"tables,omitempty"`
+	TableCreated string   `json:"table_created,omitempty"`
 }
 
 func NewAPIHandler(ctx context.Context) *APIHandler {
@@ -130,23 +131,29 @@ func (a *API) ListTablesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, returnBody{Tables: tables})
 }
 
-func CreateTableAPI(w http.ResponseWriter, r *http.Request) {
+func (a *API) CreateTableHandler(c *gin.Context) {
 	var requestBody requestBody
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	ctx := c.Request.Context()
+
+	err := c.BindJSON(&requestBody)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, "invalid body")
 		return
 	}
+
 	sql, err := db.CreateTable(requestBody.TableName)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
+		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error creating table: %s", err))
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(map[string]string{"table_name_created": sql}); err != nil {
-		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
-	}
+
+	ctx, createTableSpan := o11y.StartSpan(ctx, "CreateTableHandler")
+	defer o11y.End(createTableSpan, &err)
+	o11y.AddFieldToTrace(ctx, "create-tables", sql)
+	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
+
+	c.Header("Content-Type", "application/json")
+	c.JSON(http.StatusOK, returnBody{TableCreated: sql})
 }
 
 func DeleteTableAPI(w http.ResponseWriter, r *http.Request) {
