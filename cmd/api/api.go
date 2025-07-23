@@ -284,7 +284,7 @@ func (a *API) LeaderboardHandler(c *gin.Context) {
 
 	leaderboard, err := db.GetLeaderboard(tableName)
 	if err != nil {
-		o11y.AddFieldToTrace(ctx, "db-error", err)\
+		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusNotFound, fmt.Sprintf("error getting leaderboard: %s", err))
 		return
 	}
