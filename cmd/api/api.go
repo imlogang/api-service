@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/circleci/ex/o11y"
@@ -20,10 +19,6 @@ type TorrentRequest struct {
 	} `json:"parameters"`
 }
 
-type APIHandler struct {
-	ctx context.Context
-}
-
 type requestBody struct {
 	TableName    string `json:"table_name"`
 	User         string `json:"username"`
@@ -40,12 +35,6 @@ type returnBody struct {
 	TableCreated string   `json:"table_created,omitempty"`
 	TableDeleted string   `json:"table_deleted,omitempty"`
 	UpdateAnswer string   `json:"update_answer,omitempty"`
-}
-
-func NewAPIHandler(ctx context.Context) *APIHandler {
-	return &APIHandler{
-		ctx: ctx,
-	}
 }
 
 func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
@@ -97,25 +86,6 @@ func AddTorrentHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, returnBody{Hello: "Hello world!"})
-}
-
-func (h *APIHandler) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, span := o11y.StartSpan(h.ctx, "Health Check")
-	defer span.End()
-
-	config := db.LoadConfig()
-	err := config.TestDBConnection()
-	if err != nil {
-		databaseError := fmt.Sprintf("database error: %s", err)
-		o11y.AddFieldToTrace(ctx, "health-check", databaseError)
-		o11y.AddFieldToTrace(ctx, "status", "unhealthy")
-		http.Error(w, "Database connection failed", http.StatusServiceUnavailable)
-		return
-	}
-
-	o11y.AddFieldToTrace(ctx, "health-check", "healthy")
-	o11y.AddFieldToTrace(ctx, "status", "healthy")
-	w.WriteHeader(http.StatusOK)
 }
 
 func (a *API) ListTablesHandler(c *gin.Context) {
@@ -252,42 +222,23 @@ func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, returnBody{UpdateAnswer: sql})
 }
 
-func (h *APIHandler) GetPokemonAPI(w http.ResponseWriter, r *http.Request) {
-	ctx, span := o11y.StartSpan(h.ctx, "Get Pokemon")
-	defer span.End()
+func (a *API) GetPokemonHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	var err error
+
+	ctx, getPokemonHandlerSpan := o11y.StartSpan(ctx, "GetPokemonHandler")
+	defer o11y.End(getPokemonHandlerSpan, &err)
+
 	pokemon, err := games.GetPokemon()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("there was an error finding your pokemon, %s", err), http.StatusInternalServerError)
+		o11y.AddFieldToTrace(ctx, "db-error", err)
+		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error getting pokemon: %s", err))
 		return
 	}
 
 	o11y.AddFieldToTrace(ctx, "pokemon", pokemon)
-
-	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "%s\n", pokemon)
-}
-
-func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request) {
-	var requestBody requestBody
-	w.Header().Set("Content-Type", "application/json")
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
-	if err != nil {
-		log.Printf("invalid request body: %s", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-	sql, err := db.PutAnswerInDB(requestBody.TableName, requestBody.Answer, requestBody.Column, requestBody.SecondColumn, requestBody.NumInArray)
-	if err != nil {
-		log.Printf("could not put in database: %s", err)
-		http.Error(w, fmt.Sprintf(`{"error": "Invalid request body: %v"}`, err), http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(map[string]string{"answer": sql}); err != nil {
-		log.Printf("error updating answer: %s", err)
-		http.Error(w, fmt.Sprintf(`{"error": "Error updating answer: %v"}`, err), http.StatusBadRequest)
-	}
+	c.Header("Content-Type", "text/plain")
+	c.String(http.StatusOK, fmt.Sprintf("%s\n", pokemon))
 }
 
 func (a *API) ReadAnswerFromDBHandler(c *gin.Context) {
@@ -317,21 +268,26 @@ func (a *API) ReadAnswerFromDBHandler(c *gin.Context) {
 	c.String(http.StatusOK, answer)
 }
 
-func LeaderboardAPI(w http.ResponseWriter, r *http.Request) {
-	fullURL := r.URL.String()
-	tableName := r.URL.Query().Get("tablename")
+func (a *API) LeaderboardHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	tableName := c.Query("tablename")
+
+	var err error
+	ctx, leaderboardHandlerSpan := o11y.StartSpan(ctx, "LeaderboardHandler")
+	defer o11y.End(leaderboardHandlerSpan, &err)
 
 	if tableName == "" {
-		http.Error(w, fmt.Sprintf("Error: tableName cannot be empty. Received - tableName: %s\n The full URL: %s", tableName, fullURL), http.StatusBadRequest)
+		o11y.AddFieldToTrace(ctx, "table-name", tableName)
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("tablename: %s, cannot be empty", tableName))
 		return
 	}
 
 	leaderboard, err := db.GetLeaderboard(tableName)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving leaderboard: %s", err), http.StatusInternalServerError)
+		o11y.AddFieldToTrace(ctx, "db-error", err)\
+		c.JSON(http.StatusNotFound, fmt.Sprintf("error getting leaderboard: %s", err))
 		return
 	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "Leaderboard:\n%s", leaderboard)
+	c.Header("Content-Type", "text/plain")
+	c.String(http.StatusOK, leaderboard)
 }

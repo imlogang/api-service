@@ -25,6 +25,8 @@ func New(ctx context.Context) (*API, error) {
 	r.GET("/api/private/get_answer", a.ReadAnswerFromDBHandler)
 	r.GET("/api/private/get_current_score", a.GetScoreHandler)
 	r.POST("/api/private/update_user_score", a.UpdateScoreForUserHandler)
+	r.GET("/api/private/get_pokemon", a.GetPokemonHandler)
+	r.GET("/api/private/leaderboard", a.LeaderboardHandler)
 
 	return a, nil
 }

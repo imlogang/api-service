@@ -9,6 +9,7 @@ import (
 	"github.com/circleci/ex/httpserver/healthcheck"
 	"github.com/circleci/ex/termination"
 	"go-api/cmd/api"
+	"go-api/cmd/db"
 	_ "go-api/cmd/docs"
 	"go-api/cmd/setup"
 	"log"
@@ -39,22 +40,7 @@ func main() {
 		}
 	}()
 
-	apiHandler := httpapi.NewAPIHandler(ctx)
-
 	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
-	//http.HandleFunc("/api/private/hello", httpapi.HelloWorldHandler)
-	//http.HandleFunc("/health", apiHandler.HealthCheckHandler)
-
-	//http.HandleFunc("/api/private/list_tables", httpapi.ListTablesAPI)
-	//http.HandleFunc("/api/private/create_table", httpapi.CreateTableAPI)
-	//http.HandleFunc("/api/private/delete_table", httpapi.DeleteTableAPI)
-	http.HandleFunc("/api/private/update_table_with_user", httpapi.UpdateTableWithUser)
-	//http.HandleFunc("/api/private/get_current_score", httpapi.GetScoreAPI)
-	//whttp.HandleFunc("/api/private/update_user_score", httpapi.UpdateScoreForUserAPI)
-	http.HandleFunc("/api/private/get_pokemon", apiHandler.GetPokemonAPI)
-	http.HandleFunc("/api/private/put_answer", httpapi.PutAnswerInDBAPI)
-	//http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
-	http.HandleFunc("/api/private/leaderboard", httpapi.LeaderboardAPI)
 
 	//Start the server
 	fmt.Println("Server started on http://localhost:8080")
@@ -72,6 +58,8 @@ func run(ctx context.Context, location *time.Location) (err error) {
 		log.Fatal(err)
 	}
 	defer o11yCleanup(ctx)
+
+	testDatabase(ctx)
 
 	ctx, runSpan := o11y.StartSpan(ctx, "main: run")
 	defer o11y.End(runSpan, &err)
@@ -118,4 +106,21 @@ func loadInternal(ctx context.Context, cli cli, sys *system.System) error {
 	o11y.Log(ctx, "all gin routes are ready")
 
 	return err
+}
+
+func testDatabase(ctx context.Context) {
+	ctx, span := o11y.StartSpan(ctx, "Health Check")
+	defer span.End()
+
+	config := db.LoadConfig()
+	err := config.TestDBConnection()
+	if err != nil {
+		databaseError := fmt.Sprintf("database error: %s", err)
+		o11y.AddFieldToTrace(ctx, "health-check", databaseError)
+		o11y.AddFieldToTrace(ctx, "status", "unhealthy")
+		return
+	}
+
+	o11y.AddFieldToTrace(ctx, "health-check", "healthy")
+	o11y.AddFieldToTrace(ctx, "status", "healthy")
 }

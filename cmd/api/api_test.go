@@ -1,12 +1,10 @@
 package httpapi
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/circleci/ex/testing/testcontext"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
@@ -42,30 +40,6 @@ func TestAPI_HelloWorldHandler(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Check(t, cmp.DeepEqual(resp, tt.expectedResp))
 		})
-	}
-}
-
-// Test HealthCheckHandler
-func TestHealthCheckHandler(t *testing.T) {
-	// Create a request to pass to the handler
-	req, err := http.NewRequest("GET", "/health", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a response recorder
-	rr := httptest.NewRecorder()
-
-	// Create an APIHandler instance with a context
-	ctx := context.Background()
-	apiHandler := NewAPIHandler(ctx) // or httpapi.NewAPIHandler(ctx) if in different package
-
-	// Call the handler method
-	apiHandler.HealthCheckHandler(rr, req)
-
-	// Check if the status code is 200 OK
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("HealthCheckHandler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 }
 
