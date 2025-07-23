@@ -65,6 +65,7 @@ jobs:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
       POSTGRES_DB: beemoviebot
+      POSTGRES_INITDB_ARGS: "-c log_statement=all -c log_destination=stderr -c logging_collector=off"
     parallelism: 1
     resource_class: medium+
     steps:
