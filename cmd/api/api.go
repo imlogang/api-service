@@ -239,5 +239,5 @@ func (a *API) LeaderboardHandler(c *gin.Context) {
 		return
 	}
 	c.Header("Content-Type", "text/plain")
-	c.String(http.StatusOK, leaderboard)
+	c.String(http.StatusOK, fmt.Sprintf("\n%s", leaderboard))
 }
