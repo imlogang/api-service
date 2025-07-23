@@ -108,13 +108,13 @@ func TestAPI_ListTables(t *testing.T) {
 			assert.NilError(t, err)
 
 			req := httptest.NewRequest("GET", u.String(), nil)
-			var tables []string
+			var resp returnBody
 
 			a.Router.ServeHTTP(w, req)
 
-			err = json.NewDecoder(w.Body).Decode(&tables)
+			err = json.NewDecoder(w.Body).Decode(&resp)
 			assert.NilError(t, err)
-			assert.Check(t, cmp.DeepEqual(tables, tt.expectedTables))
+			assert.Check(t, cmp.DeepEqual(resp, tt.expectedTables))
 		})
 
 	}
