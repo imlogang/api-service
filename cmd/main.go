@@ -25,16 +25,6 @@ type cli struct {
 	ShutdownDelay      time.Duration `long:"shutdown-delay" default:"30s" description:"shutdown delay"`
 }
 
-// @title Logan's API
-// @version 1.0
-// @description These APIs handle a lot of backend things..
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name API Support
-// @contact.email logan@logangodsey.com
-
-// @host api-service.logangodsey.com
-// @BasePath /api/private/
 func main() {
 	ctx := context.Background()
 	location, err := time.LoadLocation("America/Chicago")
