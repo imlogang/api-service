@@ -29,10 +29,8 @@ func LoadConfig() Config {
 }
 
 func (c *Config) TestDBConnection() error {
-	// Connection string
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", c.User, c.Password, c.Host, c.Port, c.DB)
 
-	// Open a connection to the database
 	connectionConfig, err := pgx.ParseConnectionString(connStr)
 	if err != nil {
 		log.Fatalf("Failed to parse connection string: %v\n", err)
@@ -43,7 +41,6 @@ func (c *Config) TestDBConnection() error {
 	}
 	defer conn.Close()
 
-	// Test the connection
 	err = conn.Ping(context.Background())
 	if err != nil {
 		log.Fatal("Error connecting to the database:", err)

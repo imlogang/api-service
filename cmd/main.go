@@ -12,7 +12,6 @@ import (
 	"go-api/cmd/db"
 	"go-api/cmd/setup"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/circleci/ex/o11y"
@@ -32,20 +31,10 @@ func main() {
 		log.Printf("error loading timezone: %s\n", err)
 	}
 
-	go func() {
-		err := run(ctx, location)
-		if err != nil && !errors.Is(err, termination.ErrTerminated) {
-			log.Fatal("Unexpected Error: ", err)
-		}
-	}()
-
-	http.HandleFunc("/api/private/add_torrent", httpapi.AddTorrentHandler)
-
-	//Start the server
-	fmt.Println("Server started on http://localhost:8080")
-	fmt.Println("You can also connect via http://go-api-service.go-api.svc.cluster.local:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
-
+	err = run(ctx, location)
+	if err != nil && !errors.Is(err, termination.ErrTerminated) {
+		log.Fatal("Unexpected Error: ", err)
+	}
 }
 
 func run(ctx context.Context, location *time.Location) (err error) {
