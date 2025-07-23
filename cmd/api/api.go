@@ -10,12 +10,6 @@ import (
 	"net/http"
 )
 
-type TorrentRequest struct {
-	Parameters struct {
-		URL string `json:"url"`
-	} `json:"parameters"`
-}
-
 type requestBody struct {
 	TableName    string `json:"table_name"`
 	User         string `json:"username"`
