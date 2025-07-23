@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/circleci/ex/testing/testcontext"
-	"golang.org/x/net/context/ctxhttp"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
@@ -114,7 +112,7 @@ func TestAPI_ListTables(t *testing.T) {
 
 			a.Router.ServeHTTP(w, req)
 
-			err := json.NewDecoder(w.Body).Decode(&tables)
+			err = json.NewDecoder(w.Body).Decode(&tables)
 			assert.NilError(t, err)
 			assert.Check(t, cmp.DeepEqual(tables, tt.expectedTables))
 		})
