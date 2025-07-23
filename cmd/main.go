@@ -10,7 +10,6 @@ import (
 	"github.com/circleci/ex/termination"
 	"go-api/cmd/api"
 	"go-api/cmd/db"
-	_ "go-api/cmd/docs"
 	"go-api/cmd/setup"
 	"log"
 	"net/http"
@@ -109,18 +108,18 @@ func loadInternal(ctx context.Context, cli cli, sys *system.System) error {
 }
 
 func testDatabase(ctx context.Context) {
-	ctx, span := o11y.StartSpan(ctx, "Health Check")
+	ctx, span := o11y.StartSpan(ctx, "Database Check")
 	defer span.End()
 
 	config := db.LoadConfig()
 	err := config.TestDBConnection()
 	if err != nil {
 		databaseError := fmt.Sprintf("database error: %s", err)
-		o11y.AddFieldToTrace(ctx, "health-check", databaseError)
+		o11y.AddFieldToTrace(ctx, "db-check", databaseError)
 		o11y.AddFieldToTrace(ctx, "status", "unhealthy")
 		return
 	}
 
-	o11y.AddFieldToTrace(ctx, "health-check", "healthy")
+	o11y.AddFieldToTrace(ctx, "db-check", "healthy")
 	o11y.AddFieldToTrace(ctx, "status", "healthy")
 }
