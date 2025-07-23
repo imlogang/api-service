@@ -22,6 +22,7 @@ func New(ctx context.Context) (*API, error) {
 	r.GET("/api/private/list_tables", a.ListTablesHandler)
 	r.POST("/api/private/create_table", a.CreateTableHandler)
 	r.DELETE("/api/private/delete_table", a.DeleteTableHandler)
+	r.GET("/api/private/get_answer", a.ReadAnswerFromDBHandler)
 
 	return a, nil
 }

@@ -277,20 +277,27 @@ func PutAnswerInDBAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ReadAnswerFromDBAPI(w http.ResponseWriter, r *http.Request) {
-	tableName := r.URL.Query().Get("tablename")
-	column := r.URL.Query().Get("column")
+func (a *API) ReadAnswerFromDBHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	tableName := c.Query("tablename")
+	column := c.Query("colum")
+
+	ctx, createTableSpan := o11y.StartSpan(ctx, "ReadAnswerFromDBHandler")
+	var err error
+	defer o11y.End(createTableSpan, &err)
+
 	if tableName == "" || column == "" {
-		http.Error(w, fmt.Sprintf("tablename: %s or column: %s cannot be empty.", tableName, column), http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("tablename: %s, or column: %s, cannot be empty", tableName, column))
 		return
 	}
 	answer, err := db.ReadAnswerFromDB(tableName, column)
+
 	if err != nil {
-		http.Error(w, fmt.Sprintf("there was an error finding the answer: %s", err), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error finding answer: %s", err))
 		return
 	}
-	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "%s\n", answer)
+	c.Header("Content-Type", "text/plain")
+	c.String(http.StatusOK, answer)
 }
 
 func LeaderboardAPI(w http.ResponseWriter, r *http.Request) {

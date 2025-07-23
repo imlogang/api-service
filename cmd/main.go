@@ -63,7 +63,7 @@ func main() {
 	http.HandleFunc("/api/private/update_user_score", httpapi.UpdateScoreForUserAPI)
 	http.HandleFunc("/api/private/get_pokemon", apiHandler.GetPokemonAPI)
 	http.HandleFunc("/api/private/put_answer", httpapi.PutAnswerInDBAPI)
-	http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
+	//http.HandleFunc("/api/private/get_answer", httpapi.ReadAnswerFromDBAPI)
 	http.HandleFunc("/api/private/leaderboard", httpapi.LeaderboardAPI)
 
 	//Start the server
