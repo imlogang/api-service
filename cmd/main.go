@@ -19,8 +19,9 @@ import (
 )
 
 type cli struct {
-	APIAddr       string        `long:"api-addr" default:":8080" description:"api addr"`
-	ShutdownDelay time.Duration `long:"shutdown-delay" default:"30s" description:"shutdown delay"`
+	APIAddr            string        `long:"api-addr" default:":8080" description:"api addr"`
+	HealthcheckAPIAddr string        `long:"api-addr" default:":8081" description:"api addr for healthchecks"`
+	ShutdownDelay      time.Duration `long:"shutdown-delay" default:"30s" description:"shutdown delay"`
 }
 
 func main() {
@@ -65,9 +66,9 @@ func run(ctx context.Context, location *time.Location) (err error) {
 	o11y.Log(ctx, "health checks are loaded",
 		o11y.Field("date", time.Now().In(location)),
 	)
-	o11yMessage := fmt.Sprintf("loading the healthchecks with gin on port: %s", cli.APIAddr)
+	o11yMessage := fmt.Sprintf("loading the healthchecks with gin on port: %s", cli.HealthcheckAPIAddr)
 	o11y.Log(ctx, o11yMessage)
-	_, err = healthcheck.Load(ctx, cli.APIAddr, sys)
+	_, err = healthcheck.Load(ctx, cli.HealthcheckAPIAddr, sys)
 	if err != nil {
 		return err
 	}
