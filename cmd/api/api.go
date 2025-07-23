@@ -173,8 +173,8 @@ func (a *API) DeleteTableHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, createTableSpan := o11y.StartSpan(ctx, "DeleteTableHandler")
-	defer o11y.End(createTableSpan, &err)
+	ctx, deleteTableSpan := o11y.StartSpan(ctx, "DeleteTableHandler")
+	defer o11y.End(deleteTableSpan, &err)
 	o11y.AddFieldToTrace(ctx, "delete-tables", sql)
 	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
 
@@ -282,20 +282,24 @@ func (a *API) ReadAnswerFromDBHandler(c *gin.Context) {
 	tableName := c.Query("tablename")
 	column := c.Query("colum")
 
-	ctx, createTableSpan := o11y.StartSpan(ctx, "ReadAnswerFromDBHandler")
+	ctx, answerFromTableSpan := o11y.StartSpan(ctx, "ReadAnswerFromDBHandler")
 	var err error
-	defer o11y.End(createTableSpan, &err)
+	defer o11y.End(answerFromTableSpan, &err)
 
 	if tableName == "" || column == "" {
+		o11y.AddFieldToTrace(ctx, "table-name", tableName)
+		o11y.AddFieldToTrace(ctx, "colum-name", column)
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("tablename: %s, or column: %s, cannot be empty", tableName, column))
 		return
 	}
 	answer, err := db.ReadAnswerFromDB(tableName, column)
-
 	if err != nil {
+		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error finding answer: %s", err))
 		return
 	}
+	o11y.AddFieldToTrace(ctx, "answer", answer)
+	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
 	c.Header("Content-Type", "text/plain")
 	c.String(http.StatusOK, answer)
 }
