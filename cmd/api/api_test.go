@@ -69,7 +69,7 @@ func TestAPI_CreateTable(t *testing.T) {
 				a, err := New(ctx)
 				assert.NilError(t, err)
 				w := httptest.NewRecorder()
-				u, err := url.Parse("localhost:8082/api/private/create_table")
+				u, err := url.Parse("http://localhost:8082/api/private/create_table")
 				assert.NilError(t, err)
 				body, err := json.Marshal(tt.request)
 				assert.NilError(t, err)
