@@ -39,6 +39,7 @@ type returnBody struct {
 	Tables       []string `json:"tables,omitempty"`
 	TableCreated string   `json:"table_created,omitempty"`
 	TableDeleted string   `json:"table_deleted,omitempty"`
+	UpdateAnswer string   `json:"update_answer,omitempty"`
 }
 
 func NewAPIHandler(ctx context.Context) *APIHandler {
@@ -201,42 +202,54 @@ func UpdateTableWithUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetScoreAPI(w http.ResponseWriter, r *http.Request) {
-	fullURL := r.URL.String()
-	tableName := r.URL.Query().Get("tablename")
-	username := r.URL.Query().Get("username")
+func (a *API) GetScoreHandler(c *gin.Context) {
+	ctx := c.Request.Context()
 
+	tableName := c.Query("tablename")
+	username := c.Query("username")
+
+	var err error
+	ctx, getScoreHandlerSpan := o11y.StartSpan(ctx, "GetScoreHandler")
+	defer o11y.End(getScoreHandlerSpan, &err)
 	if tableName == "" || username == "" {
-		http.Error(w, fmt.Sprintf("Error: tableName or username cannot be empty. Received - tableName: %s, username: %s\n The full URL: %s", tableName, username, fullURL), http.StatusBadRequest)
+		o11y.AddFieldToTrace(ctx, "table_name", tableName)
+		o11y.AddFieldToTrace(ctx, "username", username)
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("tablename: %s, or username: %s, cannot be empty", tableName, username))
 		return
 	}
 
 	score, err := db.GetCurrentScore(tableName, username)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving score: %s", err), http.StatusInternalServerError)
+		o11y.AddFieldToTrace(ctx, "db-error", err)
+		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error getting current score: %s", err))
 		return
 	}
-	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, "Score for %s: %d\n", username, score)
+
+	c.Header("Content-Type", "text/plain")
+	c.String(http.StatusOK, "Score for %s: %d\n", username, score)
 }
 
-func UpdateScoreForUserAPI(w http.ResponseWriter, r *http.Request) {
+func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
+	ctx := c.Request.Context()
 	var requestBody requestBody
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	err := c.BindJSON(&requestBody)
+	ctx, updateScoreForUserHandler := o11y.StartSpan(ctx, "UpdateScoreForUserHandler")
+	defer o11y.End(updateScoreForUserHandler, &err)
+
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		o11y.AddFieldToTrace(ctx, "update-score-for-user", requestBody)
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request body: %s", err))
 		return
 	}
+
 	sql, err := db.UpdateScoreForUser(requestBody.TableName, requestBody.User, requestBody.Score, requestBody.Column)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
+		o11y.AddFieldToTrace(ctx, "db-error", err)
+		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error updating score: %s", err))
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(map[string]string{"update_answer:": sql}); err != nil {
-		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
-	}
+	c.Header("Content-Type", "application/json")
+	c.JSON(http.StatusOK, returnBody{UpdateAnswer: sql})
 }
 
 func (h *APIHandler) GetPokemonAPI(w http.ResponseWriter, r *http.Request) {

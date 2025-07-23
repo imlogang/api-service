@@ -23,6 +23,8 @@ func New(ctx context.Context) (*API, error) {
 	r.POST("/api/private/create_table", a.CreateTableHandler)
 	r.DELETE("/api/private/delete_table", a.DeleteTableHandler)
 	r.GET("/api/private/get_answer", a.ReadAnswerFromDBHandler)
+	r.GET("/api/private/get_current_score", a.GetScoreHandler)
+	r.POST("/api/private/update_user_score", a.UpdateScoreForUserHandler)
 
 	return a, nil
 }
