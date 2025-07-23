@@ -55,6 +55,7 @@ jobs:
     docker:
       - image: cimg/go:1.24
       - image: postgres:17
+        user: "postgres"
         environment:
           POSTGRES_DB: beemoviebot
           POSTGRES_USER: test
