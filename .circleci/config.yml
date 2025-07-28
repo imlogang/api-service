@@ -6,7 +6,7 @@ orbs:
 jobs:
   build-image:
     resource_class: large
-    machine: 
+    machine:
       image: ubuntu-2204:current
       docker_layer_caching: true
     steps:
@@ -16,7 +16,7 @@ jobs:
           command: |
             export CIRCLE_SHA1=$(echo ${CIRCLE_SHA1} | cut -c 1-5)
             docker build --build-arg DOCKER_TAG=$CIRCLE_SHA1 -t imlogang/go-api:$CIRCLE_SHA1 .
-      - run: 
+      - run:
           name: Docker Login
           command: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       - run:
@@ -25,7 +25,7 @@ jobs:
             export CIRCLE_SHA1=$(echo ${CIRCLE_SHA1} | cut -c 1-5)
             docker push imlogang/go-api:$CIRCLE_SHA1
 
-  deploy:
+  deploy-api:
     resource_class: logan/container-runner
     docker:
       - image: cimg/deploy:2025.01.1
@@ -36,18 +36,18 @@ jobs:
           command: |
             helm repo add go-api-helm https://imlogang.github.io/go-api-helm/
             helm repo update
-      - run: 
+      - run:
           name: Helm Upgrade
           command: |
             export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
             helm upgrade --install --debug go-api-service go-api-helm/go-api --set image.tag=${CIRCLE_SHA2} --set circleci.pipelineId=<< pipeline.id >> --set circleci.workflowId=${CIRCLE_WORKFLOW_ID} --set circleci.jobNumber=${CIRCLE_BUILD_NUM} -n go-api -f values.yaml
-      - run: 
+      - run:
           name: Watch release
           command: |
             export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
-            circleci run release plan --environment-name="Microk8s Cluster" --component-name="api-service" --target-version="${CIRCLE_SHA2}" --namespace="go-api" go-api-service
+            circleci run release plan --environment-name="Microk8s Cluster" --component-name="go-api-service" --target-version="${CIRCLE_SHA2}" --namespace="go-api" go-api-service
 
-  release-api-service:
+  release-go-api-service:
     type: release
     plan_name: go-api-service
 
@@ -87,14 +87,14 @@ jobs:
       - store_artifacts:
           path: cmd/junit.xml
           destination: junit.xml
-  
+
   lint:
     docker:
       - image: cimg/go:1.24
     resource_class: medium+
     steps:
       - checkout
-      - run: 
+      - run:
           name: install golangci-lint
           command: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.5
       - go/with-cache:
@@ -104,12 +104,12 @@ jobs:
                 command: |
                   golangci-lint run
 workflows:
-  test-build-deploy:
+  deploy-go-api-service:
     jobs:
       - test
       - lint
       - build-image:
-          context: 
+          context:
             - docker_stuff
           requires:
             - test
@@ -118,7 +118,7 @@ workflows:
             branches:
               only:
                 - main
-      - deploy:
+      - deploy-api:
           requires:
             - build-image
           serial-group: << pipeline.project.slug >>/deploy-group
@@ -126,9 +126,9 @@ workflows:
             branches:
               only:
                 - main
-      - release-api-service:
+      - release-go-api-service:
           requires:
-            - deploy
+            - deploy-api
           filters:
             branches:
               only:
