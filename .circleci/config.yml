@@ -25,7 +25,7 @@ jobs:
             export CIRCLE_SHA1=$(echo ${CIRCLE_SHA1} | cut -c 1-5)
             docker push imlogang/go-api:$CIRCLE_SHA1
 
-  deploy-api:
+  deploy:
     resource_class: logan/container-runner
     docker:
       - image: cimg/deploy:2025.01.1
