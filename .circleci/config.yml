@@ -128,7 +128,7 @@ workflows:
                 - main
       - release-api-service:
           requires:
-            - << pipeline.project.slug >>/deploy-group
+            - deploy
           filters:
             branches:
               only:
