@@ -8,9 +8,9 @@ import (
 	"github.com/circleci/ex/httpserver"
 	"github.com/circleci/ex/httpserver/healthcheck"
 	"github.com/circleci/ex/termination"
-	"go-api/cmd/api"
-	"go-api/cmd/db"
-	"go-api/cmd/setup"
+	"github.com/imlogang/api-service/cmd/db"
+	"github.com/imlogang/api-service/cmd/internal"
+	"github.com/imlogang/api-service/cmd/setup"
 	"log"
 	"time"
 
@@ -19,8 +19,8 @@ import (
 )
 
 type cli struct {
-	APIAddr            string        `long:"api-addr" default:":8080" description:"api addr"`
-	HealthcheckAPIAddr string        `long:"api-addr" default:":8081" description:"api addr for healthchecks"`
+	APIAddr            string        `long:"internal-addr" default:":8080" description:"internal addr"`
+	HealthcheckAPIAddr string        `long:"internal-addr" default:":8081" description:"internal addr for healthchecks"`
 	ShutdownDelay      time.Duration `long:"shutdown-delay" default:"30s" description:"shutdown delay"`
 }
 
@@ -41,7 +41,7 @@ func run(ctx context.Context, location *time.Location) (err error) {
 	cli := cli{}
 	kong.Parse(&cli)
 	cfg := setup.O11ySetup()
-	ctx, o11yCleanup, err := setup.LoadO11y(ctx, "api-service", *cfg)
+	ctx, o11yCleanup, err := setup.LoadO11y(ctx, "internal-service", *cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func run(ctx context.Context, location *time.Location) (err error) {
 	ctx, runSpan := o11y.StartSpan(ctx, "main: run")
 	defer o11y.End(runSpan, &err)
 
-	o11y.Log(ctx, "starting api-service",
+	o11y.Log(ctx, "starting internal-service",
 		o11y.Field("date", time.Now().In(location)),
 	)
 	sys := system.New()

@@ -25,9 +25,9 @@ func O11ySetup() *Setup {
 		O11yHoneycombEnabled: true,
 		O11yHoneycombHost:    "https://api.honeycomb.io",
 		O11yHoneycombDataset: "mickrok8s",
-		O11yService:          "api-service",
+		O11yService:          "internal-service",
 		O11yFormat:           "json",
-		StatsNamespace:       "api-service",
+		StatsNamespace:       "internal-service",
 	}
 	return cfg
 }
@@ -50,16 +50,16 @@ func LoadO11y(ctx context.Context, mode string, cfg Setup) (context.Context, fun
 func addSampling(cfg o11y.Config) o11y.Config {
 	cfg.SampleTraces = true
 	cfg.SampleRates = map[string]int{
-		"/api/private/list_tables 200":            1000,
-		"/api/private/create_table 200":           1000,
-		"/api/private/delete_table 200":           1000,
-		"/api/private/update_table_with_user 200": 1000,
-		"/api/private/get_current_score 200":      1000,
-		"/api/private/update_user_score 200":      1000,
-		"/api/private/get_pokemon 200":            1000,
-		"/api/private/put_answer 200":             1000,
-		"/api/private/get_answer 200":             1000,
-		"/api/private/leaderboard 200":            1000,
+		"/internal/private/list_tables 200":            1000,
+		"/internal/private/create_table 200":           1000,
+		"/internal/private/delete_table 200":           1000,
+		"/internal/private/update_table_with_user 200": 1000,
+		"/internal/private/get_current_score 200":      1000,
+		"/internal/private/update_user_score 200":      1000,
+		"/internal/private/get_pokemon 200":            1000,
+		"/internal/private/put_answer 200":             1000,
+		"/internal/private/get_answer 200":             1000,
+		"/internal/private/leaderboard 200":            1000,
 	}
 	return cfg
 }

@@ -7,8 +7,8 @@ circleci:
 imagePullSecrets:
   - name: regcred
 
-nameOverride: "go-api-service"
-secretName: "go-api-secrets"
+nameOverride: "go-internal-service"
+secretName: "go-internal-secrets"
 
 resources:
   limits:
@@ -23,6 +23,6 @@ postgresql:
   postgresqlDatabase: beemoviebot
   service:
     type: ClusterIP
-  secretName: go-api-service-postgresql
+  secretName: go-internal-service-postgresql
   statefulset:
     fullnameOverride: postgresql-0

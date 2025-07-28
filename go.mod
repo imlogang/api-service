@@ -1,4 +1,4 @@
-module go-api
+module github.com/imlogang/api-service
 
 go 1.23.0
 
