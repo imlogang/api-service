@@ -45,11 +45,11 @@ jobs:
           name: Watch release
           command: |
             export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
-            circleci run release plan --environment-name="Microk8s Cluster" --component-name="api-service" --target-version="${CIRCLE_SHA2}" --namespace="go-api" api-service
+            circleci run release plan --environment-name="Microk8s Cluster" --component-name="api-service" --target-version="${CIRCLE_SHA2}" --namespace="go-api" go-api-service
 
-  release-go-api-service:
+  release-api-service:
     type: release
-    plan_name: api-service
+    plan_name: go-api-service
 
   test:
     docker:
@@ -126,9 +126,9 @@ workflows:
             branches:
               only:
                 - main
-      - release-go-api-service:
+      - release-api-service:
           requires:
-            - deploy
+            - << pipeline.project.slug >>/deploy-group
           filters:
             branches:
               only:
