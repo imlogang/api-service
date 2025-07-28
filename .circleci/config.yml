@@ -104,7 +104,7 @@ jobs:
                 command: |
                   golangci-lint run
 workflows:
-  build-deploy:
+  test-build-deploy:
     jobs:
       - test
       - lint
@@ -118,7 +118,7 @@ workflows:
             branches:
               only:
                 - main
-      - deploy-api:
+      - deploy:
           requires:
             - build-image
           serial-group: << pipeline.project.slug >>/deploy-group
@@ -128,7 +128,7 @@ workflows:
                 - main
       - release-go-api-service:
           requires:
-            - deploy-api
+            - deploy
           filters:
             branches:
               only:
