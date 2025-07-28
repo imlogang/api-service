@@ -104,7 +104,7 @@ jobs:
                 command: |
                   golangci-lint run
 workflows:
-  deploy-go-api-service:
+  build-deploy:
     jobs:
       - test
       - lint
@@ -128,7 +128,7 @@ workflows:
                 - main
       - release-go-api-service:
           requires:
-            - deploy-internal
+            - deploy-api
           filters:
             branches:
               only:
