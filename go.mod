@@ -10,7 +10,7 @@ require (
 	github.com/gin-gonic/gin v1.10.1
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/mtslzr/pokeapi-go v1.4.0
-	github.com/swaggo/swag v1.16.5
+	github.com/swaggo/swag v1.16.6
 	gotest.tools/v3 v3.5.2
 )
 
