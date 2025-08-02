@@ -61,6 +61,11 @@ func TestAPI_CreateTable(t *testing.T) {
 			request:      requestBody{TableName: "random_table"},
 			expectedResp: returnBody{TableCreated: "random_table"},
 		},
+		{
+			name:         "Pokemon Scores Table",
+			request:      requestBody{TableName: "pokemon_scores"},
+			expectedResp: returnBody{TableCreated: "pokemon_scores"},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -95,7 +100,7 @@ func TestAPI_ListTables(t *testing.T) {
 	}{
 		{
 			name:           "Return All Tables",
-			expectedTables: returnBody{Tables: []string{"beemoviebot", "random_table"}},
+			expectedTables: returnBody{Tables: []string{"beemoviebot", "random_table", "pokemon_scores"}},
 		},
 	}
 	for _, tt := range tests {
@@ -128,12 +133,12 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 		expectedResp returnBody
 	}{
 		{
-			name: "Update Table",
+			name: "Update Table for test-user",
 			request: requestBody{
-				TableName: "beemoviebot",
+				TableName: "pokemon_scores",
 				User:      "test-user",
 				Score:     1,
-				Column:    "Score",
+				Column:    "SCORE",
 			},
 			expectedResp: returnBody{
 				UpdateAnswer: "the score for the user has been updated",
