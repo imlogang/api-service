@@ -3,6 +3,7 @@ package httpapi
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/circleci/ex/testing/testcontext"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -30,7 +31,7 @@ func TestAPI_HelloWorldHandler(t *testing.T) {
 			a, err := New(ctx)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
-			u, err := url.Parse("http://localhost:8082/api/private/hello")
+			u, err := url.Parse("http://localhost:8080/api/private/hello")
 			assert.NilError(t, err)
 
 			req := httptest.NewRequest("GET", u.String(), nil)
@@ -74,7 +75,7 @@ func TestAPI_CreateTable(t *testing.T) {
 				a, err := New(ctx)
 				assert.NilError(t, err)
 				w := httptest.NewRecorder()
-				u, err := url.Parse("http://localhost:8082/api/private/create_table")
+				u, err := url.Parse("http://localhost:8080/api/private/create_table")
 				assert.NilError(t, err)
 				body, err := json.Marshal(tt.request)
 				assert.NilError(t, err)
@@ -109,7 +110,7 @@ func TestAPI_ListTables(t *testing.T) {
 			a, err := New(ctx)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
-			u, err := url.Parse("http://localhost:8082/api/private/list_tables")
+			u, err := url.Parse("http://localhost:8080/api/private/list_tables")
 			assert.NilError(t, err)
 
 			req := httptest.NewRequest("GET", u.String(), nil)
@@ -122,6 +123,39 @@ func TestAPI_ListTables(t *testing.T) {
 			assert.Check(t, cmp.DeepEqual(resp, tt.expectedTables))
 		})
 
+	}
+}
+
+func TestAPI_GetCurrentScoreHandler(t *testing.T) {
+	ctx := testcontext.Background()
+	tests := []struct {
+		name         string
+		expectedResp string
+		username     string
+		score        int
+		tableName    string
+	}{
+		{
+			name:         "Get current score",
+			username:     "test-user",
+			score:        0,
+			tableName:    "pokemon_scores",
+			expectedResp: fmt.Sprintf("Score for test-user: 1\n"),
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a, err := New(ctx)
+			assert.NilError(t, err)
+			w := httptest.NewRecorder()
+			u, err := url.Parse("http://localhost:8080/api/private/get_current_score?username=test-user&tablename=pokemon_scores")
+			assert.NilError(t, err)
+			req := httptest.NewRequest("GET", u.String(), nil)
+			a.Router.ServeHTTP(w, req)
+			assert.Check(t, cmp.DeepEqual(w.Body.String(), tt.expectedResp))
+
+		})
 	}
 }
 
@@ -147,7 +181,7 @@ func TestAPI_UpdateTableWithUser(t *testing.T) {
 			a, err := New(ctx)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
-			u, err := url.Parse("http://localhost:8082/api/private/update_table_with_user")
+			u, err := url.Parse("http://localhost:8080/api/private/update_table_with_user")
 			assert.NilError(t, err)
 			request, err := json.Marshal(tt.request)
 			req := httptest.NewRequest("PUT", u.String(), bytes.NewReader(request))
@@ -186,7 +220,7 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 			a, err := New(ctx)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
-			u, err := url.Parse("http://localhost:8082/api/private/update_user_score")
+			u, err := url.Parse("http://localhost:8080/api/private/update_user_score")
 			assert.NilError(t, err)
 			request, err := json.Marshal(tt.request)
 			req := httptest.NewRequest("POST", u.String(), bytes.NewReader(request))
