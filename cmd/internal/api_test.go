@@ -133,6 +133,7 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 				TableName: "beemoviebot",
 				User:      "test-user",
 				Score:     1,
+				Column:    "Score",
 			},
 			expectedResp: returnBody{
 				UpdateAnswer: "the score for the user has been updated",
