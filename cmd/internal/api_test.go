@@ -125,6 +125,41 @@ func TestAPI_ListTables(t *testing.T) {
 	}
 }
 
+func TestAPI_UpdateTableWithUser(t *testing.T) {
+	ctx := testcontext.Background()
+	tests := []struct {
+		name         string
+		request      requestBody
+		expectedResp returnBody
+	}{
+		{
+			name: "Update Table With test-user",
+			request: requestBody{
+				TableName: "beemoviebot",
+				User:      "test-user",
+			},
+			expectedResp: returnBody{AddedUser: "test-user"},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a, err := New(ctx)
+			assert.NilError(t, err)
+			w := httptest.NewRecorder()
+			u, err := url.Parse("http://localhost:8082/api/private/update_table_with_user")
+			assert.NilError(t, err)
+			request, err := json.Marshal(tt.request)
+			req := httptest.NewRequest("PUT", u.String(), bytes.NewReader(request))
+			a.Router.ServeHTTP(w, req)
+			var resp returnBody
+			err = json.NewDecoder(w.Body).Decode(&resp)
+			assert.NilError(t, err)
+			assert.Check(t, cmp.DeepEqual(resp, tt.expectedResp))
+		})
+	}
+}
+
 func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 	ctx := testcontext.Background()
 	tests := []struct {

@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/circleci/ex/o11y"
 	"github.com/gin-gonic/gin"
@@ -27,6 +26,7 @@ type returnBody struct {
 	TableDeleted string   `json:"table_deleted,omitempty"`
 	UpdateAnswer string   `json:"update_answer,omitempty"`
 	Error        string   `json:"error,omitempty"`
+	AddedUser    string   `json:"added_user,omitempty"`
 }
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
@@ -97,23 +97,25 @@ func (a *API) DeleteTableHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, returnBody{TableDeleted: requestBody.TableName})
 }
 
-func UpdateTableWithUser(w http.ResponseWriter, r *http.Request) {
+func (a *API) UpdateTableWithUserHandler(c *gin.Context) {
 	var requestBody requestBody
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	ctx := c.Request.Context()
+	err := c.BindJSON(&requestBody)
+
+	ctx, updateTableWithUserSpan := o11y.StartSpan(ctx, "UpdateTableWithUserHandler")
+	defer o11y.End(updateTableWithUserSpan, &err)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
 	}
-	sql, err := db.UpdateTableWithUser(requestBody.TableName, requestBody.User)
+
+	_, err = db.UpdateTableWithUser(requestBody.TableName, requestBody.User)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(map[string]string{"table_updated_with": sql}); err != nil {
-		http.Error(w, fmt.Sprintf("Error encoding response: %v", err), http.StatusInternalServerError)
-	}
+	c.Header("Content-Type", "application/json")
+	c.JSON(http.StatusOK, returnBody{AddedUser: requestBody.User})
 }
 
 func (a *API) GetScoreHandler(c *gin.Context) {
