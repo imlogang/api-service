@@ -29,3 +29,9 @@ postgresql:
 
 serviceAccount:
   create: true
+
+service:
+  type: ClusterIP
+  port: 8080
+  healthport: 8081
+  name: go-api-service
