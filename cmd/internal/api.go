@@ -26,6 +26,7 @@ type returnBody struct {
 	TableCreated string   `json:"table_created,omitempty"`
 	TableDeleted string   `json:"table_deleted,omitempty"`
 	UpdateAnswer string   `json:"update_answer,omitempty"`
+	Error        string   `json:"error,omitempty"`
 }
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
@@ -37,7 +38,7 @@ func (a *API) ListTablesHandler(c *gin.Context) {
 
 	tables, err := db.ListTables()
 	if err != nil {
-		c.Status(http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
 	}
 
@@ -53,14 +54,13 @@ func (a *API) CreateTableHandler(c *gin.Context) {
 
 	err := c.BindJSON(&requestBody)
 	if err != nil {
-		err = fmt.Errorf("invalid body: %s", err)
-		c.JSON(http.StatusBadRequest, fmt.Sprintf("invalid body: %s", err))
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
 	}
 
 	sql, err := db.CreateTable(requestBody.TableName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error creating table: %s", err))
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
 
@@ -78,13 +78,13 @@ func (a *API) DeleteTableHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	err := c.BindJSON(&requestBody)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, fmt.Sprintf("invalid body: %s", err))
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
 	}
 
 	sql, err := db.DeleteTable(requestBody.TableName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error deleting table: %s", err))
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
 
@@ -128,14 +128,14 @@ func (a *API) GetScoreHandler(c *gin.Context) {
 	if tableName == "" || username == "" {
 		o11y.AddFieldToTrace(ctx, "table_name", tableName)
 		o11y.AddFieldToTrace(ctx, "username", username)
-		c.JSON(http.StatusBadRequest, fmt.Sprintf("tablename: %s, or username: %s, cannot be empty", tableName, username))
+		c.JSON(http.StatusBadRequest, returnBody{Error: "tablename or username required"})
 		return
 	}
 
 	score, err := db.GetCurrentScore(tableName, username)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
-		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error getting current score: %s", err))
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
 
@@ -152,14 +152,14 @@ func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
 
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "update-score-for-user", requestBody)
-		c.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request body: %s", err))
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
 	}
 
 	sql, err := db.UpdateScoreForUser(requestBody.TableName, requestBody.User, requestBody.Score, requestBody.Column)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
-		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error updating score: %s", err))
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
 	c.Header("Content-Type", "application/json")
@@ -176,7 +176,7 @@ func (a *API) GetPokemonHandler(c *gin.Context) {
 	pokemon, err := games.GetPokemon()
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
-		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error getting pokemon: %s", err))
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
 
@@ -197,13 +197,13 @@ func (a *API) ReadAnswerFromDBHandler(c *gin.Context) {
 	if tableName == "" || column == "" {
 		o11y.AddFieldToTrace(ctx, "table-name", tableName)
 		o11y.AddFieldToTrace(ctx, "colum-name", column)
-		c.JSON(http.StatusBadRequest, fmt.Sprintf("tablename: %s, or column: %s, cannot be empty", tableName, column))
+		c.JSON(http.StatusBadRequest, returnBody{Error: "tablename or column required"})
 		return
 	}
 	answer, err := db.ReadAnswerFromDB(tableName, column)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
-		c.JSON(http.StatusInternalServerError, fmt.Sprintf("error finding answer: %s", err))
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
 	o11y.AddFieldToTrace(ctx, "answer", answer)
@@ -222,14 +222,14 @@ func (a *API) LeaderboardHandler(c *gin.Context) {
 
 	if tableName == "" {
 		o11y.AddFieldToTrace(ctx, "table-name", tableName)
-		c.JSON(http.StatusBadRequest, fmt.Sprintf("tablename: %s, cannot be empty", tableName))
+		c.JSON(http.StatusBadRequest, returnBody{Error: "tablename required"})
 		return
 	}
 
 	leaderboard, err := db.GetLeaderboard(tableName)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
-		c.JSON(http.StatusNotFound, fmt.Sprintf("error getting leaderboard: %s", err))
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
 	c.Header("Content-Type", "text/plain")

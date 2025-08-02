@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-api-service
+  labels:
+    app: go-api-service
+    version: {{ .Values.image.tag }}
+    circleci.com/component-name: "go-api-service"
+    circleci.com/version: {{ .Values.image.tag | quote }}
+  annotations:
+    circleci.com/project-id: {{ .Values.circleci.project_id | quote }}
+    circleci.com/helm-revision-number: {{ .Release.Revision | quote }}
+    circleci.com/pipeline-id: {{ .Values.circleci.pipelineId | quote }}
+    circleci.com/workflow-id: {{ .Values.circleci.workflowId | quote }}
+    circleci.com/job-number: {{ .Values.circleci.jobNumber | quote }}
+    circleci.com/component-name: "go-api-service"
+    circleci.com/version: {{ .Values.image.tag | quote }}
+    circleci.com/restore-version-enabled: "true"
+    circleci.com/scale-component-enabled: "true"
+    circleci.com/restart-component-enabled: "true"
+    circleci.com/retry-release-enabled: "true"
+    circleci.com/promote-release-enabled: "true"
+    circleci.com/cancel-release-enabled: "true"
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      circleci.com/component-name: "go-api-service"
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        circleci.com/component-name: "go-api-service"
+        circleci.com/version: {{ .Values.image.tag | quote }}
+        app.kubernetes.io/instance: go-api-service
+        app.kubernetes.io/name: go-api-service
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "go-api.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: USERNAME
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: PASSWORD
+            - name: POSTGRES_HOST
+              value: {{ .Release.Name }}-postgresql
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.postgresqlUsername }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.secretName }}
+                  key: postgres-password
+            - name: HC_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: HC_TOKEN 
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.postgresqlDatabase }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

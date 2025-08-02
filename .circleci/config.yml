@@ -32,15 +32,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Helm Repo Add
-          command: |
-            helm repo add go-api-helm https://imlogang.github.io/go-api-helm/
-            helm repo update
-      - run:
           name: Helm Upgrade
           command: |
             export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
-            helm upgrade --install --debug go-api-service go-api-helm/go-api --set image.tag=${CIRCLE_SHA2} --set circleci.pipelineId=<< pipeline.id >> --set circleci.workflowId=${CIRCLE_WORKFLOW_ID} --set circleci.jobNumber=${CIRCLE_BUILD_NUM} -n go-api -f values.yaml
+            helm upgrade --install --debug go-api-service ./deploy --set image.tag=${CIRCLE_SHA2} --set circleci.pipelineId=<< pipeline.id >> --set circleci.workflowId=${CIRCLE_WORKFLOW_ID} --set circleci.jobNumber=${CIRCLE_BUILD_NUM} -n go-api -f values.yaml
       - run:
           name: Watch release
           command: |
