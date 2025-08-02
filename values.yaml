@@ -26,3 +26,6 @@ postgresql:
   secretName: go-api-service-postgresql
   statefulset:
     fullnameOverride: postgresql-0
+
+serviceAccount:
+  create: true
