@@ -324,7 +324,7 @@ func UpdateScoreForUser(tableName string, username string, score int, column str
 		return "", fmt.Errorf("there was an error updating the users score. %s", err)
 	}
 
-	return fmt.Sprintf("the score for the user has been updated"), nil
+	return "the score for the user has been updated", nil
 }
 
 func PutAnswerInDB(tablenName string, answer string, column string, secondColumn string, numberInArray int) (string, error) {

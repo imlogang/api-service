@@ -3,7 +3,6 @@ package httpapi
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/circleci/ex/testing/testcontext"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -151,6 +150,7 @@ func TestAPI_UpdateTableWithUser(t *testing.T) {
 			u, err := url.Parse("http://localhost:8080/api/private/update_table_with_user")
 			assert.NilError(t, err)
 			request, err := json.Marshal(tt.request)
+			assert.NilError(t, err)
 			req := httptest.NewRequest("PUT", u.String(), bytes.NewReader(request))
 			a.Router.ServeHTTP(w, req)
 			var resp returnBody
@@ -175,7 +175,7 @@ func TestAPI_GetCurrentScoreHandler(t *testing.T) {
 			username:     "test-user",
 			score:        0,
 			tableName:    "pokemon_scores",
-			expectedResp: fmt.Sprintf("Score for test-user: 0\n"),
+			expectedResp: "Score for test-user: 0\n",
 		},
 	}
 	for _, tt := range tests {
@@ -223,6 +223,7 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 			u, err := url.Parse("http://localhost:8080/api/private/update_user_score")
 			assert.NilError(t, err)
 			request, err := json.Marshal(tt.request)
+			assert.NilError(t, err)
 			req := httptest.NewRequest("POST", u.String(), bytes.NewReader(request))
 			a.Router.ServeHTTP(w, req)
 			var resp returnBody

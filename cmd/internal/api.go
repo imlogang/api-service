@@ -105,12 +105,14 @@ func (a *API) UpdateTableWithUserHandler(c *gin.Context) {
 	ctx, updateTableWithUserSpan := o11y.StartSpan(ctx, "UpdateTableWithUserHandler")
 	defer o11y.End(updateTableWithUserSpan, &err)
 	if err != nil {
+		o11y.AddFieldToTrace(ctx, "update-table-with-user", requestBody)
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
 	}
 
 	_, err = db.UpdateTableWithUser(requestBody.TableName, requestBody.User)
 	if err != nil {
+		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
