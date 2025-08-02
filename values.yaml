@@ -35,3 +35,6 @@ service:
   port: 8080
   healthport: 8081
   name: go-api-service
+
+ingress:
+  enabled: false
