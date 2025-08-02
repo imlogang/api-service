@@ -119,3 +119,41 @@ func TestAPI_ListTables(t *testing.T) {
 
 	}
 }
+
+func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
+	ctx := testcontext.Background()
+	tests := []struct {
+		name         string
+		request      requestBody
+		expectedResp returnBody
+	}{
+		{
+			name: "Update Table",
+			request: requestBody{
+				TableName: "beemoviebot",
+				User:      "test-user",
+				Score:     1,
+			},
+			expectedResp: returnBody{
+				UpdateAnswer: "the score for the user has been updated",
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a, err := New(ctx)
+			assert.NilError(t, err)
+			w := httptest.NewRecorder()
+			u, err := url.Parse("http://localhost:8082/api/private/update_user_score")
+			assert.NilError(t, err)
+			request, err := json.Marshal(tt.request)
+			req := httptest.NewRequest("POST", u.String(), bytes.NewReader(request))
+			a.Router.ServeHTTP(w, req)
+			var resp returnBody
+			err = json.NewDecoder(w.Body).Decode(&resp)
+			assert.NilError(t, err)
+			assert.Check(t, cmp.DeepEqual(resp, tt.expectedResp))
+		})
+	}
+}
