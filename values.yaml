@@ -38,3 +38,6 @@ service:
 
 ingress:
   enabled: false
+
+autoscaling:
+  enabled: false
