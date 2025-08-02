@@ -25,9 +25,9 @@ func O11ySetup() *Setup {
 		O11yHoneycombEnabled: true,
 		O11yHoneycombHost:    "https://api.honeycomb.io",
 		O11yHoneycombDataset: "mickrok8s",
-		O11yService:          "internal-service",
+		O11yService:          "api-service",
 		O11yFormat:           "json",
-		StatsNamespace:       "internal-service",
+		StatsNamespace:       "api-service",
 	}
 	return cfg
 }
