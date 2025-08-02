@@ -140,6 +140,14 @@ func TestAPI_UpdateTableWithUser(t *testing.T) {
 			},
 			expectedResp: returnBody{AddedUser: "test-user"},
 		},
+		{
+			name: "Update Table With test-user-2",
+			request: requestBody{
+				TableName: "pokemon_scores",
+				User:      "test-user-2",
+			},
+			expectedResp: returnBody{AddedUser: "test-user-2"},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -171,8 +179,15 @@ func TestAPI_GetCurrentScoreHandler(t *testing.T) {
 		tableName    string
 	}{
 		{
-			name:         "Get current score",
+			name:         "Get current score for test-user",
 			username:     "test-user",
+			score:        0,
+			tableName:    "pokemon_scores",
+			expectedResp: "Score for test-user: 0\n",
+		},
+		{
+			name:         "Get current score for test-user-2",
+			username:     "test-user-2",
 			score:        0,
 			tableName:    "pokemon_scores",
 			expectedResp: "Score for test-user: 0\n",
@@ -206,6 +221,18 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 			request: requestBody{
 				TableName: "pokemon_scores",
 				User:      "test-user",
+				Score:     1,
+				Column:    "SCORE",
+			},
+			expectedResp: returnBody{
+				UpdateAnswer: "the score for the user has been updated",
+			},
+		},
+		{
+			name: "Update Table for test-user-2",
+			request: requestBody{
+				TableName: "pokemon_scores",
+				User:      "test-user-2",
 				Score:     1,
 				Column:    "SCORE",
 			},
