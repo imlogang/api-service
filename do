@@ -13,6 +13,14 @@ run_tests_ci() {
   cd cmd && go list ./...  | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname -- -v"
 }
 
+help_lint="Run lint"
+lint() {
+  set -x
+  export PATH="$(go env GOPATH)/bin:$PATH"
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b "$(go env GOPATH)/bin" v1.64.5
+  golangci-lint run
+}
+
 list() {
     declare -F | awk '{print $3}'
 }

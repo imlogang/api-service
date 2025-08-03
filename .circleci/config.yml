@@ -87,15 +87,12 @@ jobs:
     resource_class: medium+
     steps:
       - checkout
-      - run:
-          name: install golangci-lint
-          command: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.5
       - go/with-cache:
           steps:
             - run:
                 name: lint code
-                command: |
-                  golangci-lint run
+                command: ./do lint
+
 workflows:
   deploy-go-api-service:
     jobs:
