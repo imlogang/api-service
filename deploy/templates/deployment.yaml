@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: go-api-service
+  name: api-service
   labels:
-    app: go-api-service
+    app: api-service
     version: {{ .Values.image.tag }}
-    circleci.com/component-name: "go-api-service"
+    circleci.com/component-name: "api-service"
     circleci.com/version: {{ .Values.image.tag | quote }}
   annotations:
     circleci.com/project-id: {{ .Values.circleci.project_id | quote }}
@@ -13,7 +13,7 @@ metadata:
     circleci.com/pipeline-id: {{ .Values.circleci.pipelineId | quote }}
     circleci.com/workflow-id: {{ .Values.circleci.workflowId | quote }}
     circleci.com/job-number: {{ .Values.circleci.jobNumber | quote }}
-    circleci.com/component-name: "go-api-service"
+    circleci.com/component-name: "api-service"
     circleci.com/version: {{ .Values.image.tag | quote }}
     circleci.com/restore-version-enabled: "true"
     circleci.com/scale-component-enabled: "true"
@@ -27,7 +27,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      circleci.com/component-name: "go-api-service"
+      circleci.com/component-name: "api-service"
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -35,10 +35,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        circleci.com/component-name: "go-api-service"
+        circleci.com/component-name: "api-service"
         circleci.com/version: {{ .Values.image.tag | quote }}
-        app.kubernetes.io/instance: go-api-service
-        app.kubernetes.io/name: go-api-service
+        app.kubernetes.io/instance: api-service
+        app.kubernetes.io/name: api-service
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
