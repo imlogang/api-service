@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: go-api-service
   labels:
-    app: go-api-service
+    app: api-service
     version: {{ .Values.image.tag }}
     circleci.com/component-name: "go-api-service"
     circleci.com/version: {{ .Values.image.tag | quote }}
