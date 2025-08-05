@@ -13,24 +13,21 @@ type API struct {
 }
 
 func New(ctx context.Context) (*API, error) {
-	r := ginrouter.Default(ctx, "internal-api-service")
+	r := ginrouter.Default(ctx, "internal")
 	r.Use(o11ygin.ClientCancelled())
 
 	a := &API{Router: r}
 	o11y.Log(ctx, "New Internal router is called")
-	private := r.Group("api/private")
-	{
-		private.GET("/hello", a.HelloWorldHandler)
-		private.GET("/list_tables", a.ListTablesHandler)
-		private.POST("/create_table", a.CreateTableHandler)
-		private.DELETE("/delete_table", a.DeleteTableHandler)
-		private.GET("/get_answer", a.ReadAnswerFromDBHandler)
-		private.GET("/get_current_score", a.GetScoreHandler)
-		private.POST("/update_user_score", a.UpdateScoreForUserHandler)
-		private.GET("/get_pokemon", a.GetPokemonHandler)
-		private.GET("/leaderboard", a.LeaderboardHandler)
-		private.PUT("/update_table_with_user", a.UpdateTableWithUserHandler)
-	}
+	r.GET("/api/private/hello", a.HelloWorldHandler)
+	r.GET("/api/private/list_tables", a.ListTablesHandler)
+	r.POST("/api/private/create_table", a.CreateTableHandler)
+	r.DELETE("/api/private/delete_table", a.DeleteTableHandler)
+	r.GET("/api/private/get_answer", a.ReadAnswerFromDBHandler)
+	r.GET("/api/private/get_current_score", a.GetScoreHandler)
+	r.POST("/api/private/update_user_score", a.UpdateScoreForUserHandler)
+	r.GET("/api/private/get_pokemon", a.GetPokemonHandler)
+	r.GET("/api/private/leaderboard", a.LeaderboardHandler)
+	r.PUT("/api/private/update_table_with_user", a.UpdateTableWithUserHandler)
 
 	return a, nil
 }
