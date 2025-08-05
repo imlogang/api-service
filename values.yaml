@@ -7,7 +7,7 @@ circleci:
 imagePullSecrets:
   - name: regcred
 
-nameOverride: "api-service"
+nameOverride: "go-api-service"
 secretName: "go-api-secrets"
 
 resources:
