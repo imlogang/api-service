@@ -94,7 +94,7 @@ jobs:
                 command: ./do lint
 
 workflows:
-  deploy-go-api-service:
+  build-and-deploy-api-service:
     jobs:
       - test
       - lint
