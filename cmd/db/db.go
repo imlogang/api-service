@@ -333,7 +333,12 @@ func GetCurrentScore(tableName string, username string) (int, error) {
 	if err != nil {
 		log.Fatal("Error testing DB connection: ", err)
 	}
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+			return
+		}
+	}(DB)
 	if tableName == "" || username == "" {
 		return 0, fmt.Errorf("table or username must not be empty. table: %s, username: %s", tableName, username)
 	}
