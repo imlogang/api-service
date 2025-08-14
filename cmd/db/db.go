@@ -39,7 +39,12 @@ func (c *Config) TestDBConnection() error {
 	if err != nil {
 		log.Fatal("Error opening connection to the database:", err)
 	}
-	defer conn.Close()
+	defer func(conn *pgx.Conn) {
+		err := conn.Close()
+		if err != nil {
+
+		}
+	}(conn)
 
 	err = conn.Ping(context.Background())
 	if err != nil {
@@ -79,7 +84,12 @@ func ListTables() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query tables: %v", err)
 	}
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 
 	for rows.Next() {
 		var tableName string
@@ -107,7 +117,12 @@ func CreateTable(tableName string) (string, error) {
 		log.Fatal("Error testing DB connection:", err)
 	}
 
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
@@ -156,7 +171,12 @@ func DeleteTable(tableName string) (string, error) {
 		log.Fatal("Error testing DB connection:", err)
 	}
 
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
@@ -204,7 +224,12 @@ func addColumnIfNotExistsAnswerTable(tableName string, column string, secondColu
 	if err != nil {
 		return fmt.Errorf(`error testing DB connection: %s`, err)
 	}
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 
 	sql := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" VARCHAR(255);`, tableName, column)
 	sqlSecond := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" INTEGER`, tableName, secondColumn)
@@ -232,7 +257,12 @@ func AddUserIfNotExist(tableName string, username string) (string, error) {
 	if err != nil {
 		log.Fatal("Error testing DB connection: ", err)
 	}
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 
 	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE "USERNAME" = $1;`, tableName)
 	var exists int
@@ -265,7 +295,12 @@ func UpdateTableWithUser(tableName string, username string) (string, error) {
 		log.Fatal("Error testing DB connection: ", err)
 	}
 
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
@@ -317,7 +352,12 @@ func UpdateScoreForUser(tableName string, username string, score int, column str
 	if err != nil {
 		log.Fatal("Error testing DB connection: ", err)
 	}
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 	sql := fmt.Sprintf(`UPDATE %s SET "%s" = %d WHERE "USERNAME" = '%s'`, tableName, column, score, username)
 	_, err = DB.Exec(sql)
 	if err != nil {
@@ -346,7 +386,12 @@ func PutAnswerInDB(tablenName string, answer string, column string, secondColumn
 	if err != nil {
 		return "", fmt.Errorf("there was an error connecting to the database: %s", err)
 	}
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 	sql := fmt.Sprintf(`INSERT INTO %s ("id", "ANSWER", "POSITION") VALUES (1, $1, $2) ON CONFLICT ("id") DO UPDATE SET "ANSWER" = $1, "POSITION" = $2;`, tablenName)
 	_, err = DB.Exec(sql, answer, numberInArray)
 	if err != nil {
@@ -364,7 +409,12 @@ func ReadAnswerFromDB(tableName string, column string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("there was an error connecting to the database: %s", err)
 	}
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 
 	sql := fmt.Sprintf("SELECT '%s' FROM %s WHERE id = 1", column, tableName)
 	var answer string
@@ -384,7 +434,12 @@ func GetLeaderboard(tableName string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("there was an error connecting to the database: %s", err)
 	}
-	defer DB.Close()
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+
+		}
+	}(DB)
 
 	sql := fmt.Sprintf(`SELECT "USERNAME", "SCORE" FROM %s ORDER BY "SCORE" DESC LIMIT 10;`, tableName)
 	rows, err := DB.Query(sql)
