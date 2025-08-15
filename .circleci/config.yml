@@ -49,7 +49,7 @@ jobs:
   test:
     docker:
       - image: cimg/go:1.25
-      - image: postgres:17.5
+      - image: postgres:17.6
         user: "postgres"
         environment:
           POSTGRES_DB: beemoviebot
