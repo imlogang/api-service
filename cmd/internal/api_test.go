@@ -281,7 +281,7 @@ func TestAPI_LeaderboardHandler(t *testing.T) {
 			a, err := New(ctx)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
-			u, err := url.Parse("http://localhost:8080/api/private/get_leaderboard")
+			u, err := url.Parse("http://localhost:8080/api/private/leaderboard")
 			assert.NilError(t, err)
 			req := httptest.NewRequest("GET", u.String(), nil)
 			a.Router.ServeHTTP(w, req)
