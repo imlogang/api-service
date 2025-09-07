@@ -273,7 +273,7 @@ func TestAPI_LeaderboardHandler(t *testing.T) {
 		{
 			name:         "Get leaderboard",
 			tableName:    "pokemon_scores",
-			expectedResp: "",
+			expectedResp: "\\nUsername: test-user, Score: 1\\nUsername: test-user-2, Score: 1\\n",
 		},
 	}
 	for _, tt := range tests {
