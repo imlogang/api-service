@@ -260,3 +260,32 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestAPI_LeaderboardHandler(t *testing.T) {
+	ctx := testcontext.Background()
+	tests := []struct {
+		name         string
+		expectedResp string
+		tableName    string
+		leaderboard  string
+	}{
+		{
+			name:         "Get leaderboard",
+			tableName:    "pokemon_scores",
+			expectedResp: "",
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a, err := New(ctx)
+			assert.NilError(t, err)
+			w := httptest.NewRecorder()
+			u, err := url.Parse("http://localhost:8080/api/private/get_leaderboard")
+			assert.NilError(t, err)
+			req := httptest.NewRequest("GET", u.String(), nil)
+			a.Router.ServeHTTP(w, req)
+			assert.Check(t, cmp.DeepEqual(w.Body.String(), tt.expectedResp))
+		})
+	}
+}
