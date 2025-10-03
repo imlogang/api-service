@@ -21,7 +21,9 @@ jobs:
           command: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.67.0
       - run:
           name: scan image
-          command: trivy image imlogang/go-api:$CIRCLE_SHA1
+          command: |
+            export CIRCLE_SHA1=$(echo ${CIRCLE_SHA1} | cut -c 1-5)
+            trivy image imlogang/go-api:$CIRCLE_SHA1
       - run:
           name: Docker Login
           command: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
