@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.25.4
 
 require (
-	github.com/alecthomas/kong v1.12.1
+	github.com/alecthomas/kong v1.13.0
 	github.com/circleci/ex v1.0.16628-839946e
 	github.com/gin-gonic/gin v1.11.0
 	github.com/jackc/pgx v3.6.2+incompatible
