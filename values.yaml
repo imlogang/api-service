@@ -30,6 +30,8 @@ postgresql:
     registry: docker.io
     repository: bitnamilegacy/postgresql
     tag: 17.5.0-debian-12-r20
+  security:
+    allowInsecureImages: true
 
 serviceAccount:
   create: true
