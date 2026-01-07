@@ -26,6 +26,10 @@ postgresql:
   secretName: go-api-service-postgresql
   statefulset:
     fullnameOverride: postgresql-0
+  image:  
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
+    tag: 17.5.0-debian-12-r20
 
 serviceAccount:
   create: true
