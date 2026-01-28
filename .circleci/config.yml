@@ -3,10 +3,32 @@ version: 2.1
 orbs:
   go: circleci/go@3.0.3
 
+executors:
+  machine_medium:
+    machine: true
+    resource_class: logan/machine_medium
+  deploy:
+    resource_class: logan/container-runner
+    docker:
+      - image: cimg/deploy:2025.01.1
+  test:
+    resource_class: logan/medium_plus
+    docker:
+      - image: cimg/go:1.25
+      - image: postgres:17.7
+        user: "postgres"
+        environment:
+          POSTGRES_DB: beemoviebot
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+  lint:
+    docker:
+      - image: cimg/go:1.25
+    resource_class: logan/medium_plus
+
 jobs:
   build-image:
-    resource_class: logan/machine_medium #cci-ignore
-    machine: true
+    executor: machine_medium
     steps:
       - checkout
       - run:
@@ -32,9 +54,7 @@ jobs:
             docker push imlogang/go-api:$CIRCLE_SHA1
 
   deploy-api:
-    resource_class: logan/container-runner
-    docker:
-      - image: cimg/deploy:2025.01.1
+    executor: deploy
     steps:
       - checkout
       - run:
@@ -53,14 +73,7 @@ jobs:
     plan_name: go-api-service
 
   test:
-    docker:
-      - image: cimg/go:1.25
-      - image: postgres:17.7
-        user: "postgres"
-        environment:
-          POSTGRES_DB: beemoviebot
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
+    executor: test
     environment:
       POSTGRES_HOST: localhost
       POSTGRES_PORT: 5432
@@ -85,9 +98,7 @@ jobs:
           path: cmd/junit.xml
 
   lint:
-    docker:
-      - image: cimg/go:1.25
-    resource_class: cimg/go:1.25 #cci-ignore
+    executor: lint
     steps:
       - checkout
       - go/with-cache:
