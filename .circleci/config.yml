@@ -5,10 +5,8 @@ orbs:
 
 jobs:
   build-image:
-    resource_class: large
-    machine:
-      image: ubuntu-2204:current
-      docker_layer_caching: true
+    resource_class: logan/machine_medium #cci-ignore
+    machine: true
     steps:
       - checkout
       - run:
@@ -71,7 +69,7 @@ jobs:
       POSTGRES_DB: beemoviebot
       POSTGRES_INITDB_ARGS: "-c log_statement=all -c log_destination=stderr -c logging_collector=off"
     parallelism: 1
-    resource_class: medium+
+    resource_class: logan/medium_plus #cci-ignore
     steps:
       - checkout
       - run:
@@ -89,7 +87,7 @@ jobs:
   lint:
     docker:
       - image: cimg/go:1.25
-    resource_class: medium+
+    resource_class: cimg/go:1.25 #cci-ignore
     steps:
       - checkout
       - go/with-cache:
