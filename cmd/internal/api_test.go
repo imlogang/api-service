@@ -216,7 +216,7 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 				TableName: "pokemon_scores",
 				User:      "test-user",
 				Score:     1,
-				Column:    "SCORE",
+				Column:    "score",
 			},
 			expectedResp: returnBody{
 				UpdateAnswer: "the score for the user has been updated",
@@ -228,7 +228,7 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 				TableName: "pokemon_scores",
 				User:      "test-user-2",
 				Score:     1,
-				Column:    "SCORE",
+				Column:    "score",
 			},
 			expectedResp: returnBody{
 				UpdateAnswer: "the score for the user has been updated",
@@ -266,7 +266,7 @@ func TestAPI_LeaderboardHandler(t *testing.T) {
 		{
 			name:         "Get leaderboard",
 			tableName:    "pokemon_scores",
-			expectedResp: "\nUsername: test-user, Score: 0\nUsername: test-user-2, Score: 0\n",
+			expectedResp: "\nUsername: test-user, Score: 1\nUsername: test-user-2, Score: 1\n",
 		},
 	}
 	for _, tt := range tests {

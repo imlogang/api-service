@@ -208,8 +208,8 @@ func AddColumnsIfNotExists(tableName string) error {
 		}
 	}(DB)
 
-	sql_username := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "USERNAME" VARCHAR(255);`, tableName)
-	sql_score := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "SCORE" INTEGER;`, tableName)
+	sql_username := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "username" VARCHAR(255);`, tableName)
+	sql_score := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "score" INTEGER;`, tableName)
 
 	_, err = DB.Exec(sql_username)
 	if err != nil {
@@ -274,7 +274,7 @@ func AddUserIfNotExist(tableName string, username string) (string, error) {
 		}
 	}(DB)
 
-	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE "USERNAME" = $1;`, tableName)
+	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE "username" = $1;`, tableName)
 	var exists int
 	err = DB.QueryRow(sql, username).Scan(&exists)
 	if err != nil {
@@ -373,7 +373,7 @@ func UpdateScoreForUser(tableName string, username string, score int, column str
 			return
 		}
 	}(DB)
-	sql := fmt.Sprintf(`UPDATE %s SET "%s" = %d WHERE "USERNAME" = '%s'`, tableName, column, score, username)
+	sql := fmt.Sprintf(`UPDATE %s SET "%s" = %d WHERE "username" = '%s'`, tableName, column, score, username)
 	_, err = DB.Exec(sql)
 	if err != nil {
 		return "", fmt.Errorf("there was an error updating the users score. %s", err)
