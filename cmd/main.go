@@ -14,7 +14,6 @@ import (
 	"github.com/imlogang/api-service/cmd/db"
 	"github.com/imlogang/api-service/cmd/internal"
 	"github.com/imlogang/api-service/cmd/setup"
-	"github.com/jackc/pgx"
 
 	"github.com/circleci/ex/o11y"
 	"github.com/circleci/ex/system"
@@ -129,22 +128,19 @@ func ensurePokemonScoresTable(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	defer func(DB *pgx.Conn) {
-		err := DB.Close()
-		if err != nil {
-			return
-		}
-	}(DB)
-	
+	defer DB.Close()
+
 	ctx, span := o11y.StartSpan(ctx, "db.ensure_pokemon_scores")
 	defer o11y.End(span, &err)
 
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS pokemon_scores (
-			id SERIAL PRIMARY KEY,
-			username TEXT NOT NULL UNIQUE,
-			score INTEGER NOT NULL DEFAULT 0
+			id SERIAL PRIMARY KEY
 		);
+
+		ALTER TABLE pokemon_scores
+			ADD COLUMN IF NOT EXISTS username TEXT UNIQUE,
+			ADD COLUMN IF NOT EXISTS score INTEGER NOT NULL DEFAULT 0;
 	`)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "table", "pokemon_scores")
