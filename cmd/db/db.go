@@ -294,6 +294,13 @@ func AddUserIfNotExist(tableName string, username string) (string, error) {
 }
 
 func UpdateTableWithUser(tableName string, username string) (string, error) {
+	if tableName == "" {
+		return "", fmt.Errorf("the table name must not be empty")
+	}
+	if username == "" {
+		return "", fmt.Errorf("the user must not be empty")
+	}
+
 	err := AddColumnsIfNotExists(tableName)
 	if err != nil {
 		return "", fmt.Errorf("error ensuring columns: %v", err)
@@ -302,26 +309,18 @@ func UpdateTableWithUser(tableName string, username string) (string, error) {
 	config := LoadConfig()
 	DB, err := config.Connect()
 	if err != nil {
-		log.Fatal("Error testing DB connection: ", err)
+		return "", err
 	}
+	defer DB.Close()
 
-	defer func(DB *pgx.Conn) {
-		err := DB.Close()
-		if err != nil {
-			return
-		}
-	}(DB)
+	sql := fmt.Sprintf(
+		`INSERT INTO %s (username, score) VALUES ($1, 0)`,
+		tableName,
+	)
 
-	if tableName == "" {
-		return "", fmt.Errorf("the table name must not be empty")
-	}
-	if username == "" {
-		return "", fmt.Errorf("the user must not be empty")
-	}
-	sql := fmt.Sprintf(`INSERT INTO %s ("USERNAME", "SCORE") VALUES ('%s', 0)`, tableName, username)
-	_, err = DB.Exec(sql)
+	_, err = DB.Exec(sql, username)
 	if err != nil {
-		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
+		return "", fmt.Errorf("there was an error updating the table: %w", err)
 	}
 
 	return fmt.Sprintf("The table %s was updated", tableName), nil
