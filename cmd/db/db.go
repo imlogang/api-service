@@ -318,7 +318,7 @@ func UpdateTableWithUser(tableName string, username string) (string, error) {
 	if username == "" {
 		return "", fmt.Errorf("the user must not be empty")
 	}
-	sql := fmt.Sprintf(`INSERT INTO %s ("USERNAME", "SCORE") VALUES ('%s', 0)`, tableName, username)
+	sql := fmt.Sprintf(`INSERT INTO %s ("username", "score") VALUES ('%s', 0)`, tableName, username)
 	_, err = DB.Exec(sql)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
@@ -342,7 +342,7 @@ func GetCurrentScore(tableName string, username string) (int, error) {
 	if tableName == "" || username == "" {
 		return 0, fmt.Errorf("table or username must not be empty. table: %s, username: %s", tableName, username)
 	}
-	sql := fmt.Sprintf(`SELECT "SCORE" FROM "%s" WHERE "USERNAME" = $1;`, tableName)
+	sql := fmt.Sprintf(`SELECT "score" FROM "%s" WHERE "username" = $1;`, tableName)
 	var score int
 	err = DB.QueryRow(sql, username).Scan(&score)
 	if err != nil {
