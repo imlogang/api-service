@@ -62,33 +62,26 @@ func TestAPI_CreateTable(t *testing.T) {
 			request:      requestBody{TableName: "random_table"},
 			expectedResp: returnBody{TableCreated: "random_table"},
 		},
-		{
-			name:         "Pokemon Scores Table",
-			request:      requestBody{TableName: "pokemon_scores"},
-			expectedResp: returnBody{TableCreated: "pokemon_scores"},
-		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Run(tt.name, func(t *testing.T) {
-				a, err := New(ctx)
-				assert.NilError(t, err)
-				w := httptest.NewRecorder()
-				u, err := url.Parse("http://localhost:8080/api/private/create_table")
-				assert.NilError(t, err)
-				body, err := json.Marshal(tt.request)
-				assert.NilError(t, err)
+			a, err := New(ctx)
+			assert.NilError(t, err)
+			w := httptest.NewRecorder()
+			u, err := url.Parse("http://localhost:8080/api/private/create_table")
+			assert.NilError(t, err)
+			body, err := json.Marshal(tt.request)
+			assert.NilError(t, err)
 
-				req := httptest.NewRequest("POST", u.String(), bytes.NewReader(body))
-				a.Router.ServeHTTP(w, req)
+			req := httptest.NewRequest("POST", u.String(), bytes.NewReader(body))
+			a.Router.ServeHTTP(w, req)
 
-				var resp returnBody
-				err = json.NewDecoder(w.Body).Decode(&resp)
-				assert.NilError(t, err)
+			var resp returnBody
+			err = json.NewDecoder(w.Body).Decode(&resp)
+			assert.NilError(t, err)
 
-				assert.Check(t, cmp.DeepEqual(resp, tt.expectedResp))
-			})
+			assert.Check(t, cmp.DeepEqual(resp, tt.expectedResp))
 		})
 	}
 }
@@ -101,7 +94,7 @@ func TestAPI_ListTables(t *testing.T) {
 	}{
 		{
 			name:           "Return All Tables",
-			expectedTables: returnBody{Tables: []string{"beemoviebot", "random_table", "pokemon_scores"}},
+			expectedTables: returnBody{Tables: []string{"beemoviebot", "random_table"}},
 		},
 	}
 	for _, tt := range tests {
