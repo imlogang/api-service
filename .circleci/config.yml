@@ -94,7 +94,7 @@ jobs:
           command: |
             export PGPASSWORD=test
             psql \
-              -h postgres \
+              -h localhost \
               -p 5432 \
               -U test \
               -d beemoviebot \
