@@ -92,18 +92,17 @@ jobs:
       - run:
           name: Setup test database
           command: |
-            export PGPASSWORD="$POSTGRES_PASSWORD"
+            export PGPASSWORD=test
             psql \
-              -h "$POSTGRES_HOST" \
-              -p "$POSTGRES_PORT" \
-              -U "$POSTGRES_USER" \
-              -d "$POSTGRES_DB" <<EOF
-            CREATE TABLE IF NOT EXISTS pokemon_scores (
-              id SERIAL PRIMARY KEY,
-              username TEXT NOT NULL UNIQUE,
-              score INTEGER NOT NULL DEFAULT 0
-            );
-            EOF
+              -h postgres \
+              -p 5432 \
+              -U test \
+              -d beemoviebot \
+              -c "CREATE TABLE IF NOT EXISTS pokemon_scores (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT NOT NULL UNIQUE,
+                    score INTEGER NOT NULL DEFAULT 0
+                  );"
       - go/with-cache:
           steps:
             - run:
