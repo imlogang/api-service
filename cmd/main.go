@@ -103,7 +103,7 @@ func testDatabase(ctx context.Context) {
 	defer span.End()
 
 	config := db.LoadConfig()
-	conn, err := config.TestDBConnection()
+	_, err := config.TestDBConnection()
 	if err != nil {
 		databaseError := fmt.Sprintf("database error: %s", err)
 		o11y.AddFieldToTrace(ctx, "db-check", databaseError)
@@ -111,7 +111,7 @@ func testDatabase(ctx context.Context) {
 		return
 	}
 
-	err = ensurePokemonScoresTable(ctx, conn)
+	err = ensurePokemonScoresTable(ctx)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "status", "schema_error")
 		o11y.AddFieldToTrace(ctx, "error", err.Error())
@@ -123,11 +123,23 @@ func testDatabase(ctx context.Context) {
 }
 
 
-func ensurePokemonScoresTable(ctx context.Context, conn *pgx.Conn) (err error) {
+func ensurePokemonScoresTable(ctx context.Context) (err error) {
+	config := db.LoadConfig()
+	DB, err := config.Connect()
+	if err != nil {
+		return err
+	}
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+			return
+		}
+	}(DB)
+	
 	ctx, span := o11y.StartSpan(ctx, "db.ensure_pokemon_scores")
 	defer o11y.End(span, &err)
 
-	_, err = conn.Exec(`
+	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS pokemon_scores (
 			id SERIAL PRIMARY KEY,
 			username TEXT NOT NULL UNIQUE,
