@@ -28,7 +28,7 @@ func LoadConfig() Config {
 	}
 }
 
-func (c *Config) TestDBConnection() error {
+func (c *Config) TestDBConnection() (*pgx.Conn, error) {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", c.User, c.Password, c.Host, c.Port, c.DB)
 
 	connectionConfig, err := pgx.ParseConnectionString(connStr)
@@ -52,7 +52,7 @@ func (c *Config) TestDBConnection() error {
 	} else {
 		fmt.Println("Successfully connected to the database!")
 	}
-	return err
+	return conn, err
 }
 
 func (c *Config) Connect() (*pgx.Conn, error) {
@@ -294,13 +294,6 @@ func AddUserIfNotExist(tableName string, username string) (string, error) {
 }
 
 func UpdateTableWithUser(tableName string, username string) (string, error) {
-	if tableName == "" {
-		return "", fmt.Errorf("the table name must not be empty")
-	}
-	if username == "" {
-		return "", fmt.Errorf("the user must not be empty")
-	}
-
 	err := AddColumnsIfNotExists(tableName)
 	if err != nil {
 		return "", fmt.Errorf("error ensuring columns: %v", err)
@@ -309,18 +302,26 @@ func UpdateTableWithUser(tableName string, username string) (string, error) {
 	config := LoadConfig()
 	DB, err := config.Connect()
 	if err != nil {
-		return "", err
+		log.Fatal("Error testing DB connection: ", err)
 	}
-	defer DB.Close()
 
-	sql := fmt.Sprintf(
-		`INSERT INTO %s (username, score) VALUES ($1, 0)`,
-		tableName,
-	)
+	defer func(DB *pgx.Conn) {
+		err := DB.Close()
+		if err != nil {
+			return
+		}
+	}(DB)
 
-	_, err = DB.Exec(sql, username)
+	if tableName == "" {
+		return "", fmt.Errorf("the table name must not be empty")
+	}
+	if username == "" {
+		return "", fmt.Errorf("the user must not be empty")
+	}
+	sql := fmt.Sprintf(`INSERT INTO %s ("USERNAME", "SCORE") VALUES ('%s', 0)`, tableName, username)
+	_, err = DB.Exec(sql)
 	if err != nil {
-		return "", fmt.Errorf("there was an error updating the table: %w", err)
+		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
 	}
 
 	return fmt.Sprintf("The table %s was updated", tableName), nil

@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/alecthomas/kong"
 	"github.com/circleci/ex/httpserver"
 	"github.com/circleci/ex/httpserver/healthcheck"
@@ -11,8 +14,7 @@ import (
 	"github.com/imlogang/api-service/cmd/db"
 	"github.com/imlogang/api-service/cmd/internal"
 	"github.com/imlogang/api-service/cmd/setup"
-	"log"
-	"time"
+	"github.com/jackc/pgx"
 
 	"github.com/circleci/ex/o11y"
 	"github.com/circleci/ex/system"
@@ -101,7 +103,7 @@ func testDatabase(ctx context.Context) {
 	defer span.End()
 
 	config := db.LoadConfig()
-	err := config.TestDBConnection()
+	conn, err := config.TestDBConnection()
 	if err != nil {
 		databaseError := fmt.Sprintf("database error: %s", err)
 		o11y.AddFieldToTrace(ctx, "db-check", databaseError)
@@ -109,6 +111,36 @@ func testDatabase(ctx context.Context) {
 		return
 	}
 
+	err = ensurePokemonScoresTable(ctx, conn)
+	if err != nil {
+		o11y.AddFieldToTrace(ctx, "status", "schema_error")
+		o11y.AddFieldToTrace(ctx, "error", err.Error())
+		return
+	}
+
 	o11y.AddFieldToTrace(ctx, "db-check", "healthy")
 	o11y.AddFieldToTrace(ctx, "status", "healthy")
+}
+
+
+func ensurePokemonScoresTable(ctx context.Context, conn *pgx.Conn) (err error) {
+	ctx, span := o11y.StartSpan(ctx, "db.ensure_pokemon_scores")
+	defer o11y.End(span, &err)
+
+	_, err = conn.Exec(`
+		CREATE TABLE IF NOT EXISTS pokemon_scores (
+			id SERIAL PRIMARY KEY,
+			username TEXT NOT NULL UNIQUE,
+			score INTEGER NOT NULL DEFAULT 0
+		);
+	`)
+	if err != nil {
+		o11y.AddFieldToTrace(ctx, "table", "pokemon_scores")
+		o11y.AddFieldToTrace(ctx, "error", err.Error())
+		return err
+	}
+
+	o11y.AddFieldToTrace(ctx, "table", "pokemon_scores")
+	o11y.AddFieldToTrace(ctx, "status", "ensured")
+	return nil
 }
