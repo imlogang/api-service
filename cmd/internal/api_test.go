@@ -94,7 +94,7 @@ func TestAPI_ListTables(t *testing.T) {
 	}{
 		{
 			name:           "Return All Tables",
-			expectedTables: returnBody{Tables: []string{"beemoviebot", "random_table"}},
+			expectedTables: returnBody{Tables: []string{"pokemon_scores", "beemoviebot", "random_table"}},
 		},
 	}
 	for _, tt := range tests {

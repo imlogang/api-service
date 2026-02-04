@@ -456,7 +456,7 @@ func GetLeaderboard(tableName string) (string, error) {
 		}
 	}(DB)
 
-	sql := fmt.Sprintf(`SELECT "USERNAME", "SCORE" FROM %s ORDER BY "SCORE" DESC LIMIT 10;`, tableName)
+	sql := fmt.Sprintf(`SELECT "username", "score" FROM %s ORDER BY "score" DESC LIMIT 10;`, tableName)
 	rows, err := DB.Query(sql)
 	if err != nil {
 		return "", fmt.Errorf("error executing query: %s", err)
