@@ -37,7 +37,7 @@ global:
 
 database:
   host: "ubuntu-postgresql-k8s-server.logangodsey.com"
-  port: 5432
+  port: "5432"
   name: beemoviebot
   user: beemoviebot_user
   passwordSecret:
