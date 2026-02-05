@@ -61,19 +61,19 @@ spec:
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secretName }}
+                  name: {{ .Values.secretName | quote }}
                   key: USERNAME
             - name: PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secretName }}
+                  name: {{ .Values.secretName | quote }}
                   key: PASSWORD
             - name: POSTGRES_HOST
-              value: {{ .Values.database.host }}
+              value: "{{ .Values.database.host }}"
             - name: POSTGRES_PORT
               value: {{ .Values.database.port }}
             - name: POSTGRES_USER
-              value: {{ .Values.database.user }}
+              value: {{ .Values.database.user | quote }}
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -82,7 +82,7 @@ spec:
             - name: HC_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secretName }}
+                  name: {{ .Values.secretName | quote  }}
                   key: HC_TOKEN 
             - name: POSTGRES_DB
               value: {{ .Values.database.name }}
@@ -122,5 +122,3 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-
-      
