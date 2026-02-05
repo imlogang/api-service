@@ -22,18 +22,27 @@ global:
   security:
     allowInsecureImages: true
 
-postgresql:
-  postgresqlUsername: postgres
-  postgresqlDatabase: beemoviebot
-  service:
-    type: ClusterIP
-  secretName: go-api-service-postgresql
-  statefulset:
-    fullnameOverride: postgresql-0
-  image:  
-    registry: docker.io
-    repository: bitnamilegacy/postgresql
-    tag: 17.5.0-debian-12-r20
+# postgresql:
+#   postgresqlUsername: postgres
+#   postgresqlDatabase: beemoviebot
+#   service:
+#     type: ClusterIP
+#   secretName: go-api-service-postgresql
+#   statefulset:
+#     fullnameOverride: postgresql-0
+#   image:  
+#     registry: docker.io
+#     repository: bitnamilegacy/postgresql
+#     tag: 17.5.0-debian-12-r20
+
+database:
+  host: "ubuntu-postgresql-k8s-server.logangodsey.com"
+  port: 5432
+  name: beemoviebot
+  user: beemoviebot_user
+  passwordSecret:
+    name: go-api-secrets
+    key: POSTGRES_PASSWORD
 
 serviceAccount:
   create: true

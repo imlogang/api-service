@@ -69,23 +69,23 @@ spec:
                   name: {{ .Values.secretName }}
                   key: PASSWORD
             - name: POSTGRES_HOST
-              value: {{ .Release.Name }}-postgresql
+              value: {{ .Values.database.host }}
             - name: POSTGRES_PORT
-              value: "5432"
+              value: {{ .Values.database.port }}
             - name: POSTGRES_USER
-              value: {{ .Values.postgresql.postgresqlUsername }}
+              value: {{ .Values.database.user }}
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.postgresql.secretName }}
-                  key: postgres-password
+                  name: {{ .Values.database.passwordSecret.name }}
+                  key: {{ .Values.database.passwordSecret.key }}
             - name: HC_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.secretName }}
                   key: HC_TOKEN 
             - name: POSTGRES_DB
-              value: {{ .Values.postgresql.postgresqlDatabase }}
+              value: {{ .Values.database.name }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
