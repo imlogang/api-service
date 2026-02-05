@@ -71,7 +71,7 @@ spec:
             - name: POSTGRES_HOST
               value: {{ .Values.database.host }}
             - name: POSTGRES_PORT
-              value: "{{ .Values.database.port | quote }}"
+              value: {{ .Values.database.port | quote }}
             - name: POSTGRES_USER
               value: {{ .Values.database.user | quote }}
             - name: POSTGRES_PASSWORD
