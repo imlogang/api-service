@@ -24,7 +24,7 @@ executors:
   lint:
     docker:
       - image: cimg/go:1.25
-    resource_class: logan/small
+    resource_class: logan/medium_plus
 
 jobs:
   build-image:
