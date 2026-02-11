@@ -14,7 +14,7 @@ executors:
   test:
     resource_class: logan/medium_plus
     docker:
-      - image: cimg/go:1.25
+      - image: cimg/go:1.26
       - image: postgres:18.1
         user: "postgres"
         environment:
@@ -23,7 +23,7 @@ executors:
           POSTGRES_PASSWORD: test
   lint:
     docker:
-      - image: cimg/go:1.25
+      - image: cimg/go:1.26
     resource_class: logan/medium_plus
 
 jobs:
