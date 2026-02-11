@@ -2,7 +2,7 @@ module github.com/imlogang/api-service
 
 go 1.23.0
 
-toolchain go1.25.7
+toolchain go1.26.0
 
 require (
 	github.com/alecthomas/kong v1.14.0
