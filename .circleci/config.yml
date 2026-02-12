@@ -42,13 +42,16 @@ jobs:
     executor: lint
     steps:
       - checkout
-      - run:
-          name: Build binary
-          command: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api-service ./cmd/main.go
-      - persist_to_workspace:
+      - go/with-cache:
+          mod: true
+          steps:
+            - run:
+                name: Build binary
+                command: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api-service ./cmd/main.go
+      - persist_to_workspace:          
           root: .
           paths:
-            - api-servce
+            - api-service
   build-image:
     executor: machine_medium
     steps:
