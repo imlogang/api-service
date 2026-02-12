@@ -26,47 +26,68 @@ executors:
       - image: cimg/go:1.26
     resource_class: logan/medium_plus
 
+commands:
+  get-tag:
+    steps:
+      - run:
+          name: Create Tag Environment Variable
+          command: |
+              SHORT_SHA=${CIRCLE_SHA1:0:7}
+              TAG="1.0-${CIRCLE_BUILD_NUM}-${SHORT_SHA}"
+
+              echo "export TAG="'"$TAG"'"" >> "$BASH_ENV"
+
 jobs:
+  build-binary:
+    executor: lint
+    steps:
+      - checkout
+      - run:
+          name: Build binary
+          command: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /api-service ./cmd/main.go
+      - persist_to_workspace:
+          root: .
+          paths:
+            - api-servce
   build-image:
     executor: machine_medium
     steps:
       - checkout
+      - attach_workspace:
+          at: .
+      - get-tag
       - run:
           name: Docker Build
           command: |
-            export CIRCLE_SHA1=$(echo ${CIRCLE_SHA1} | cut -c 1-5)
-            docker build --build-arg DOCKER_TAG=$CIRCLE_SHA1 -t imlogang/go-api:$CIRCLE_SHA1 .
+            docker build \
+              -t imlogang/go-api:$TAG \
+              .
       - run: 
-          name: install trivy
-          command: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.67.0
+          name: Install Trivy
+          command: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.69.1
       - run:
           name: scan image
-          command: |
-            export CIRCLE_SHA1=$(echo ${CIRCLE_SHA1} | cut -c 1-5)
-            trivy image imlogang/go-api:$CIRCLE_SHA1
+          command: trivy image imlogang/go-api:$TAG
       - run:
           name: Docker Login
           command: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       - run:
           name: Docker Push
-          command: |
-            export CIRCLE_SHA1=$(echo ${CIRCLE_SHA1} | cut -c 1-5)
-            docker push imlogang/go-api:$CIRCLE_SHA1
+          command: docker push imlogang/go-api:$TAG
 
   deploy-api:
     executor: deploy
     steps:
       - checkout
+      - get-tag
       - run:
           name: Helm Upgrade
           command: |
-            export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
-            helm upgrade --install --debug go-api-service ./deploy --set image.tag=${CIRCLE_SHA2} --set circleci.pipelineId=<< pipeline.id >> --set circleci.workflowId=${CIRCLE_WORKFLOW_ID} --set-string circleci.jobNumber=${CIRCLE_BUILD_NUM} -n go-api -f values.yaml
+            helm upgrade --install --debug go-api-service ./deploy --set image.tag=${TAG} --set circleci.pipelineId=<< pipeline.id >> --set circleci.workflowId=${CIRCLE_WORKFLOW_ID} --set-string circleci.jobNumber=${CIRCLE_BUILD_NUM} -n go-api -f values.yaml
       - run:
           name: Watch release
           command: |
-            export CIRCLE_SHA2=$(echo "${CIRCLE_SHA1}" | cut -c 1-5)
-            circleci run release plan --environment-name="Microk8s Cluster" --component-name="go-api-service" --target-version="${CIRCLE_SHA2}" --namespace="go-api" go-api-service
+            circleci run release plan --environment-name="Microk8s Cluster" --component-name="go-api-service" --target-version="${TAG}" --namespace="go-api" go-api-service
 
   release-go-api-service:
     type: release
@@ -81,7 +102,6 @@ jobs:
       POSTGRES_PASSWORD: test
       POSTGRES_DB: beemoviebot
       POSTGRES_INITDB_ARGS: "-c log_statement=all -c log_destination=stderr -c logging_collector=off"
-    parallelism: 1
     resource_class: logan/medium_plus #cci-ignore
     steps:
       - checkout

@@ -28,18 +28,13 @@ type cli struct {
 
 func main() {
 	ctx := context.Background()
-	location, err := time.LoadLocation("America/Chicago")
-	if err != nil {
-		log.Printf("error loading timezone: %s\n", err)
-	}
-
-	err = run(ctx, location)
+	err := run(ctx)
 	if err != nil && !errors.Is(err, termination.ErrTerminated) {
 		log.Fatal("Unexpected Error: ", err)
 	}
 }
 
-func run(ctx context.Context, location *time.Location) (err error) {
+func run(ctx context.Context) (err error) {
 	cli := cli{}
 	kong.Parse(&cli)
 	cfg := setup.O11ySetup()
@@ -54,9 +49,6 @@ func run(ctx context.Context, location *time.Location) (err error) {
 	ctx, runSpan := o11y.StartSpan(ctx, "main: run")
 	defer o11y.End(runSpan, &err)
 
-	o11y.Log(ctx, "starting internal-service",
-		o11y.Field("date", time.Now().In(location)),
-	)
 	sys := system.New()
 	defer sys.Cleanup(ctx)
 
@@ -65,9 +57,6 @@ func run(ctx context.Context, location *time.Location) (err error) {
 		return err
 	}
 
-	o11y.Log(ctx, "health checks are loaded",
-		o11y.Field("date", time.Now().In(location)),
-	)
 	o11yMessage := fmt.Sprintf("loading the healthchecks with gin on port: %s", cli.HealthcheckAPIAddr)
 	o11y.Log(ctx, o11yMessage)
 	_, err = healthcheck.Load(ctx, cli.HealthcheckAPIAddr, sys)
@@ -121,7 +110,6 @@ func testDatabase(ctx context.Context) {
 	o11y.AddFieldToTrace(ctx, "db-check", "healthy")
 	o11y.AddFieldToTrace(ctx, "status", "healthy")
 }
-
 
 func ensurePokemonScoresTable(ctx context.Context) (err error) {
 	config := db.LoadConfig()
