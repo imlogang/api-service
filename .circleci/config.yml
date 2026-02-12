@@ -39,7 +39,7 @@ commands:
               SHORT_SHA=${CIRCLE_SHA1:0:7}
               TAG="1.0-${CIRCLE_BUILD_NUM}-${SHORT_SHA}"
 
-              echo "export TAG="'"$TAG"'"" >> "$BASH_ENV"
+              echo "export TAG='$TAG'" >> "$BASH_ENV"
       - run:
           name: Echo $TAG
           command: echo $TAG
