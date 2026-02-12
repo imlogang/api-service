@@ -40,10 +40,8 @@ commands:
               TAG="1.0-${CIRCLE_BUILD_NUM}-${SHORT_SHA}"
 
               echo "export TAG='$TAG'" >> "$BASH_ENV"
-      - run:
-          name: Echo $TAG
-          command: echo $TAG
-
+              echo "$TAG" > image-tag.txt
+            
 jobs:
   build-binary:
     executor: build
@@ -59,6 +57,7 @@ jobs:
           root: .
           paths:
             - api-service
+            - image-tag.txt
   build-image:
     executor: machine_medium
     steps:
@@ -89,7 +88,13 @@ jobs:
     executor: deploy
     steps:
       - checkout
-      - get-tag
+      - attach_workspace:
+          at: .
+      - run:
+          name: Create TAG
+          command: |
+            TAG=$(cat image-tag.txt)
+            echo "export TAG='$TAG'" >> "$BASH_ENV"
       - run:
           name: Helm Upgrade
           command: |
