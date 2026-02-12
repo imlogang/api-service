@@ -148,12 +148,17 @@ workflows:
     jobs:
       - test
       - lint
+      - build-binary:
+          requires:
+            - test
+            - lint
       - build-image:
           context:
             - docker_stuff
           requires:
             - test
             - lint
+            - build-binary
           filters:
             branches:
               only:
