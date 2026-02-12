@@ -25,6 +25,10 @@ executors:
     docker:
       - image: cimg/go:1.26
     resource_class: logan/medium_plus
+  build:
+    docker:
+      - image: cimg/go:1.26
+    resource_class: logan/large
 
 commands:
   get-tag:
@@ -36,10 +40,13 @@ commands:
               TAG="1.0-${CIRCLE_BUILD_NUM}-${SHORT_SHA}"
 
               echo "export TAG="'"$TAG"'"" >> "$BASH_ENV"
+      - run:
+          name: Echo $TAG
+          command: echo $TAG
 
 jobs:
   build-binary:
-    executor: lint
+    executor: build
     steps:
       - checkout
       - go/with-cache:
