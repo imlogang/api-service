@@ -25,10 +25,6 @@ executors:
     docker:
       - image: cimg/go:1.26
     resource_class: logan/medium_plus
-  build:
-    docker:
-      - image: cimg/go:1.26
-    resource_class: logan/large
 
 commands:
   get-tag:
@@ -44,33 +40,15 @@ commands:
               echo $TAG
             
 jobs:
-  build-binary:
-    executor: build
-    steps:
-      - checkout
-      - go/with-cache:
-          mod: true
-          steps:
-            - run:
-                name: Build binary
-                command: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api-service ./cmd/main.go
-      - persist_to_workspace:          
-          root: .
-          paths:
-            - api-service
   build-image:
     executor: machine_medium
     steps:
       - checkout
-      - attach_workspace:
-          at: .
       - get-tag
       - run:
           name: Docker Build
           command: |
-            docker build \
-              -t imlogang/go-api:$TAG \
-              .
+            docker build -t imlogang/go-api:$TAG .
       - run: 
           name: Install Trivy
           command: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.69.1
@@ -157,15 +135,12 @@ workflows:
     jobs:
       - test
       - lint
-      - build-binary:
-          requires:
-            - test
-            - lint
       - build-image:
           context:
             - docker_stuff
           requires:
-            - build-binary
+            - test
+            - lint
           filters:
             branches:
               only:
