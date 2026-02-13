@@ -28,17 +28,17 @@ type cli struct {
 
 func main() {
 	ctx := context.Background()
-	err := run(ctx)
+	err := run(ctx, Version, Date)
 	if err != nil && !errors.Is(err, termination.ErrTerminated) {
 		log.Fatal("Unexpected Error: ", err)
 	}
 }
 
-func run(ctx context.Context) (err error) {
+func run(ctx context.Context, version, date string) (err error) {
 	cli := cli{}
 	kong.Parse(&cli)
 	cfg := setup.O11ySetup()
-	ctx, o11yCleanup, err := setup.LoadO11y(ctx, "internal-service", *cfg)
+	ctx, o11yCleanup, err := setup.LoadO11y(ctx, "internal-service", *cfg, version)
 	if err != nil {
 		log.Fatal(err)
 	}

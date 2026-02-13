@@ -48,7 +48,12 @@ jobs:
       - run:
           name: Docker Build
           command: |
-            docker build -t imlogang/go-api:$TAG .
+            docker build \
+              --build-arg VERSION=$TAG \
+              --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+              -t imlogang/go-api:$TAG \
+              .
+
       - run: 
           name: Install Trivy
           command: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.69.1

@@ -2,9 +2,10 @@ package setup
 
 import (
 	"context"
+	"os"
+
 	"github.com/circleci/ex/config/o11y"
 	"github.com/circleci/ex/config/secret"
-	"os"
 )
 
 type Setup struct {
@@ -32,7 +33,7 @@ func O11ySetup() *Setup {
 	return cfg
 }
 
-func LoadO11y(ctx context.Context, mode string, cfg Setup) (context.Context, func(context.Context), error) {
+func LoadO11y(ctx context.Context, mode string, cfg Setup, version string) (context.Context, func(context.Context), error) {
 	o11ycfg := o11y.Config{
 		RollbarDisabled:  true,
 		HoneycombEnabled: cfg.O11yHoneycombEnabled,
@@ -43,6 +44,7 @@ func LoadO11y(ctx context.Context, mode string, cfg Setup) (context.Context, fun
 		Format:           cfg.O11yFormat,
 		Mode:             mode,
 		StatsNamespace:   cfg.StatsNamespace,
+		Version:          version,
 	}
 	return o11y.Setup(ctx, addSampling(o11ycfg))
 }
