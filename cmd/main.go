@@ -20,6 +20,11 @@ import (
 	"github.com/circleci/ex/system"
 )
 
+var (
+	Version = "dev"
+	Date    = ""
+)
+
 type cli struct {
 	APIAddr            string        `long:"internal-addr" default:":8080" description:"internal addr"`
 	HealthcheckAPIAddr string        `long:"internal-addr" default:":8081" description:"internal addr for healthchecks"`
