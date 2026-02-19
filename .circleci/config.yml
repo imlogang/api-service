@@ -10,7 +10,7 @@ executors:
   deploy:
     resource_class: logan/small
     docker:
-      - image: cimg/deploy:2025.01.1
+      - image: cimg/deploy:2026.02.1
   test:
     resource_class: logan/medium_plus
     docker:
