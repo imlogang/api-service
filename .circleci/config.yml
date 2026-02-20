@@ -48,6 +48,9 @@ jobs:
     steps:
       - checkout
       - get-tag
+      - run:
+          name: Docker Login
+          command: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       - run: 
           name: Create Builder
           command: |
@@ -64,6 +67,7 @@ jobs:
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
               -t imlogang/go-api:$TAG \
+              --push \
               .
       - run: 
           name: Install Trivy
@@ -71,12 +75,6 @@ jobs:
       - run:
           name: scan image
           command: trivy image imlogang/go-api:$TAG
-      - run:
-          name: Docker Login
-          command: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      - run:
-          name: Docker Push
-          command: docker push imlogang/go-api:$TAG
 
   deploy-api:
     executor: deploy
