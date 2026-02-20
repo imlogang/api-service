@@ -41,19 +41,29 @@ commands:
             
 jobs:
   build-image:
-    executor: machine_medium
+    docker:
+      - image: cimg/base:current
+    resource_class: logan/small
     steps:
       - checkout
       - get-tag
+      - run: 
+          name: Create Builder
+          command: |
+            docker buildx create \
+            --name remote-builder \
+            --driver remote \
+            tcp://192.168.30.105:1234
+
+            docker buildx use remote-builder
       - run:
           name: Docker Build
           command: |
-            docker build \
+            docker buildx build \
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
               -t imlogang/go-api:$TAG \
               .
-
       - run: 
           name: Install Trivy
           command: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.69.1
