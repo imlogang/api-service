@@ -39,6 +39,20 @@ commands:
               echo "export TAG='$TAG'" >> "$BASH_ENV"
               source $BASH_ENV
               echo $TAG
+  install-trivy:
+    steps:
+      - run:
+          name: install trivy
+          command: |
+            if command -v trivy >/dev/null 2>&1; then
+                echo "Trivy already installed"
+                exit 0
+            fi
+            sudo apt-get install wget gnupg
+            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+            echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+            sudo apt-get update
+            sudo apt-get install trivy
             
 jobs:
   build-image:
@@ -69,9 +83,7 @@ jobs:
               -t imlogang/go-api:$TAG \
               --push \
               .
-      - run: 
-          name: Install Trivy
-          command: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.69.1
+      - install-trivy
       - run:
           name: scan image
           command: trivy image imlogang/go-api:$TAG
