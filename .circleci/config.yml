@@ -92,15 +92,17 @@ jobs:
               --network=host \
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+              --build-cache-from=imlogang/go-api:latest \
               -t imlogang/go-api:$TAG \
+              -t imlogang/go-api:latest \
               .
       - install-trivy
-      - run:
-          name: scan image
-          command: trivy image imlogang/go-api:$TAG
       - run: 
           name: push image
           command: sudo nerdctl --address /run/containerd/containerd.sock push imlogang/go-api:$TAG
+      - run:
+          name: scan image
+          command: trivy image imlogang/go-api:$TAG
 
   deploy-api:
     executor: deploy
