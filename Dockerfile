@@ -1,4 +1,4 @@
-FROM cimg/go:1.26 AS builder
+FROM golang:1.26 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
