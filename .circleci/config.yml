@@ -83,6 +83,7 @@ jobs:
             fi
             sudo nerdctl build \
               --address /run/containerd/containerd.sock \
+              --network=host \
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
               -t imlogang/go-api:$TAG \
