@@ -78,10 +78,12 @@ jobs:
           name: Docker Build
           command: |
             if ! pgrep buildkitd > /dev/null; then
-                sudo buildkitd \
+              sudo buildkitd \
+                --containerd-worker=true \
                 --containerd-worker-addr=/run/containerd/containerd.sock \
-                --snapshotter=overlayfs \
-                --allow-entitlements=network.host &
+                --containerd-worker-snapshotter=overlayfs \
+                --containerd-worker-net=host \
+                --allow-insecure-entitlement=network.host &
               sleep 5
             fi
             sudo nerdctl build \
