@@ -64,7 +64,7 @@ jobs:
       - get-tag
       - run:
           name: Docker Login
-          command: nerdctl login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_TOKEN"
+          command: nerdctl login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       # - run: 
       #     name: Create Builder
       #     command: |
