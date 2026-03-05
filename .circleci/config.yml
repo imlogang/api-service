@@ -57,7 +57,7 @@ commands:
 jobs:
   build-image:
     docker:
-      - image: dockerregistry.logangodsey.com/toolbox:1.0-189-46a3c48
+      - image: dockerregistry.logangodsey.com/toolbox:1.0-198-cafe8c3
     resource_class: logan/docker_builder
     steps:
       - checkout
@@ -77,8 +77,12 @@ jobs:
       - run:
           name: Docker Build
           command: |
+            if ! pgrep buildkitd > /dev/null; then
+                sudo buildkitd --containerd-worker-addr=/run/containerd/containerd.sock &
+                sleep 5
+            fi
             sudo nerdctl build \
-              --address /run/containerd/containerd.sock
+              --address /run/containerd/containerd.sock \
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
               -t imlogang/go-api:$TAG \
