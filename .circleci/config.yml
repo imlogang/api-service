@@ -77,7 +77,7 @@ jobs:
       - run:
           name: Docker Build
           command: |
-            docker buildx build \
+            nerdctl build \
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
               -t imlogang/go-api:$TAG \
