@@ -99,7 +99,7 @@ jobs:
       - install-trivy
       - run: 
           name: push image
-          command: sudo nerdctl --address /run/containerd/containerd.sock push imlogang/go-api:$TAG
+          command: nerdctl --address /run/containerd/containerd.sock push imlogang/go-api:$TAG
       - run:
           name: scan image
           command: trivy image imlogang/go-api:$TAG
