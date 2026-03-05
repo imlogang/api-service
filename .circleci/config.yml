@@ -78,7 +78,7 @@ jobs:
           name: Docker Build
           command: |
             if ! pgrep buildkitd > /dev/null; then
-                sudo buildkitd --oci-worker-no-process-sandbox --containerd-worker-addr=/run/containerd/containerd.sock &
+                sudo buildkitd --containerd-worker-addr=/run/containerd/containerd.sock &
                 sleep 5
             fi
             sudo nerdctl build \
