@@ -57,23 +57,23 @@ commands:
 jobs:
   build-image:
     docker:
-      - image: cimg/base:current
-    resource_class: logan/small
+      - image: dockerregistry.logangodsey.com/toolbox:1.0-183-cc001dd
+    resource_class: logan/docker_builder
     steps:
       - checkout
       - get-tag
       - run:
           name: Docker Login
           command: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      - run: 
-          name: Create Builder
-          command: |
-            docker buildx create \
-            --name remote-builder \
-            --driver remote \
-            tcp://192.168.30.105:1234
+      # - run: 
+      #     name: Create Builder
+      #     command: |
+      #       docker buildx create \
+      #       --name remote-builder \
+      #       --driver remote \
+      #       tcp://192.168.30.105:1234
 
-            docker buildx use remote-builder
+      #       docker buildx use remote-builder
       - run:
           name: Docker Build
           command: |
