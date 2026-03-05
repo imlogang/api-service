@@ -57,19 +57,19 @@ commands:
 jobs:
   build-image:
     docker:
-      - image: dockerregistry.logangodsey.com/toolbox:1.0-213-0031eeb
+      - image: dockerregistry.logangodsey.com/toolbox:1.0-222-e13ae6d
     resource_class: logan/docker_builder
     steps:
       - checkout
       - get-tag
       - run:
           name: Docker Login
-          command: nerdctl login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+          command: sudo nerdctl login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       - run:
           name: Docker Build
           command: |
             if ! pgrep buildkitd > /dev/null; then
-              buildkitd \
+              sudo buildkitd \
                 --containerd-worker=true \
                 --containerd-worker-addr=/run/containerd/containerd.sock \
                 --containerd-worker-snapshotter=overlayfs \
@@ -78,7 +78,7 @@ jobs:
                 --allow-insecure-entitlement=security.insecure & 
               sleep 5
             fi
-            nerdctl build \
+            sudo nerdctl build \
               --address /run/containerd/containerd.sock \
               --network=host \
               --build-arg VERSION=$TAG \
@@ -90,7 +90,7 @@ jobs:
       - install-trivy
       - run: 
           name: push image
-          command: nerdctl --address /run/containerd/containerd.sock push imlogang/go-api:$TAG
+          command: sudo nerdctl --address /run/containerd/containerd.sock push imlogang/go-api:$TAG
       - run:
           name: scan image
           command: trivy image imlogang/go-api:$TAG
