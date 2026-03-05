@@ -98,7 +98,7 @@ jobs:
             sudo nerdctl --address $CONTAINERD_ADDRESS push imlogang/go-api:latest
       - run:
           name: scan image
-          command: trivy image --image-src=registry imlogang/go-api:$TAG 
+          command: trivy image --image-src=remote imlogang/go-api:$TAG 
 
   deploy-api:
     executor: deploy
