@@ -83,7 +83,8 @@ jobs:
                 --containerd-worker-addr=/run/containerd/containerd.sock \
                 --containerd-worker-snapshotter=overlayfs \
                 --containerd-worker-net=host \
-                --allow-insecure-entitlement=network.host &
+                --allow-insecure-entitlement=network.host \
+                --allow-insecure-entitlement=security.insecure & 
               sleep 5
             fi
             sudo nerdctl build \
