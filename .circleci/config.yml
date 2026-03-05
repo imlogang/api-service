@@ -57,7 +57,7 @@ commands:
 jobs:
   build-image:
     docker:
-      - image: dockerregistry.logangodsey.com/toolbox:1.0-198-cafe8c3
+      - image: dockerregistry.logangodsey.com/toolbox:1.0-213-0031eeb
     resource_class: logan/docker_builder
     steps:
       - checkout
@@ -65,20 +65,11 @@ jobs:
       - run:
           name: Docker Login
           command: nerdctl login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      # - run: 
-      #     name: Create Builder
-      #     command: |
-      #       docker buildx create \
-      #       --name remote-builder \
-      #       --driver remote \
-      #       tcp://192.168.30.105:1234
-
-      #       docker buildx use remote-builder
       - run:
           name: Docker Build
           command: |
             if ! pgrep buildkitd > /dev/null; then
-              sudo buildkitd \
+              buildkitd \
                 --containerd-worker=true \
                 --containerd-worker-addr=/run/containerd/containerd.sock \
                 --containerd-worker-snapshotter=overlayfs \
@@ -87,7 +78,7 @@ jobs:
                 --allow-insecure-entitlement=security.insecure & 
               sleep 5
             fi
-            sudo nerdctl build \
+            nerdctl build \
               --address /run/containerd/containerd.sock \
               --network=host \
               --build-arg VERSION=$TAG \
