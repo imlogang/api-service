@@ -78,6 +78,7 @@ jobs:
           name: Docker Build
           command: |
             sudo nerdctl build \
+              --address /run/containerd/containerd.sock
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
               -t imlogang/go-api:$TAG \
@@ -88,7 +89,7 @@ jobs:
           command: trivy image imlogang/go-api:$TAG
       - run: 
           name: push image
-          command: sudo nerdctl push imlogang/go-api:$TAG
+          command: sudo nerdctl --address /run/containerd/containerd.sock push imlogang/go-api:$TAG
 
   deploy-api:
     executor: deploy
