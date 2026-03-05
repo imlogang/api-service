@@ -59,6 +59,8 @@ jobs:
     docker:
       - image: dockerregistry.logangodsey.com/toolbox:1.0-222-e13ae6d
     resource_class: logan/docker_builder
+    environment:
+      CONTAINERD_ADDRESS: "/run/containerd/containerd.sock"
     steps:
       - checkout
       - get-tag
@@ -71,7 +73,7 @@ jobs:
             if ! pgrep buildkitd > /dev/null; then
               sudo buildkitd \
                 --containerd-worker=true \
-                --containerd-worker-addr=/run/containerd/containerd.sock \
+                --containerd-worker-addr=$CONTAINERD_ADDRESS \
                 --containerd-worker-snapshotter=overlayfs \
                 --containerd-worker-net=host \
                 --allow-insecure-entitlement=network.host \
@@ -79,21 +81,22 @@ jobs:
               sleep 5
             fi
             sudo nerdctl build \
-              --address /run/containerd/containerd.sock \
+              --address $CONTAINERD_ADDRESS \
               --network=host \
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
               --cache-from=imlogang/go-api:latest \
+              --progress=plain \
               -t imlogang/go-api:$TAG \
               -t imlogang/go-api:latest \
               .
       - install-trivy
       - run: 
           name: push image
-          command: sudo nerdctl --address /run/containerd/containerd.sock push imlogang/go-api:$TAG
+          command: sudo nerdctl --address /run/containerd/containerd.sock push imlogang/go-api:$TAG imlogang/go-api:latest
       - run:
           name: scan image
-          command: trivy image imlogang/go-api:$TAG
+          command: trivy image imlogang/go-api:$TAG 
 
   deploy-api:
     executor: deploy
