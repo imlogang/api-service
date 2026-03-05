@@ -92,7 +92,7 @@ jobs:
               --network=host \
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-              --build-cache-from=imlogang/go-api:latest \
+              --import-cache type=registry,ref=imlogang/go-api:latest \
               -t imlogang/go-api:$TAG \
               -t imlogang/go-api:latest \
               .
