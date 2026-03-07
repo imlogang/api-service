@@ -15,6 +15,12 @@ executors:
     resource_class: logan/medium_plus
     docker:
       - image: cimg/go:1.26
+        environment:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: beemoviebot
       - image: postgres:18.1
         user: "postgres"
         environment:
@@ -120,12 +126,6 @@ jobs:
 
   test:
     executor: test
-    environment:
-      POSTGRES_HOST: localhost
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: test
-      POSTGRES_PASSWORD: test
-      POSTGRES_DB: beemoviebot
     steps:
       - checkout
       - run:
