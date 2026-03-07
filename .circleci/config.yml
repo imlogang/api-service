@@ -166,17 +166,27 @@ jobs:
                 name: lint code
                 command: ./do lint
 
+  helm-lint:
+    executor: deploy
+    steps:
+      - checkout
+      - run: 
+          name: helm lint
+          command: helm lint ./deploy
+
 workflows:
   build-and-deploy-api-service:
     jobs:
       - test
       - lint
+      - helm-lint
       - build-image:
           context:
             - docker_stuff
           requires:
             - test
             - lint
+            - helm-lint
           filters:
             branches:
               only:
