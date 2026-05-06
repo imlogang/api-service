@@ -62,49 +62,32 @@ commands:
             
 jobs:
   build-image:
-    docker:
-      - image: dockerregistry.logangodsey.com/toolbox:1.0-222-e13ae6d
-    resource_class: logan/docker_builder
-    environment:
-      CONTAINERD_ADDRESS: "/run/containerd/containerd.sock"
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large.gen
     steps:
       - checkout
       - get-tag
       - run:
           name: Docker Login
-          command: sudo nerdctl login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+          command: docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
       - run:
           name: Docker Build
           command: |
-            if ! pgrep buildkitd > /dev/null; then
-              sudo buildkitd \
-                --containerd-worker=true \
-                --containerd-worker-addr=$CONTAINERD_ADDRESS \
-                --containerd-worker-snapshotter=overlayfs \
-                --containerd-worker-net=host \
-                --allow-insecure-entitlement=network.host \
-                --allow-insecure-entitlement=security.insecure & 
-              sleep 5
-            fi
-            sudo nerdctl build \
-              --address $CONTAINERD_ADDRESS \
-              --network=host \
+            docker build \
               --build-arg VERSION=$TAG \
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-              --cache-from=imlogang/go-api:latest \
-              --progress=plain \
               -t imlogang/go-api:$TAG \
-              -t imlogang/go-api:latest \
               .
       - install-trivy
+      - run:
+          name: scan image
+          command: trivy image  imlogang/go-api:$TAG 
       - run: 
           name: push image
           command: |
-            sudo nerdctl --address $CONTAINERD_ADDRESS push imlogang/go-api:$TAG 
-            sudo nerdctl --address $CONTAINERD_ADDRESS push imlogang/go-api:latest
-      - run:
-          name: scan image
-          command: trivy image --image-src=remote imlogang/go-api:$TAG 
+            docker push imlogang/go-api:$TAG
+      
 
   deploy-api:
     executor: deploy
