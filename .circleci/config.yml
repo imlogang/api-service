@@ -64,7 +64,7 @@ jobs:
   build-image:
     machine:
       image: ubuntu-2404:current
-    resource_class: large.gen
+    resource_class: large.gen2
     steps:
       - checkout
       - get-tag
