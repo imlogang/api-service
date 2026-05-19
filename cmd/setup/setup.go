@@ -45,6 +45,7 @@ func LoadO11y(ctx context.Context, mode string, cfg Setup, version string) (cont
 		Mode:              mode,
 		StatsNamespace:    cfg.StatsNamespace,
 		Version:           version,
+		UseEnvironments:   true,
 	}
 	return o11y.Otel(ctx, addSampling(o11ycfg))
 }
