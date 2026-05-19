@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5"
 )
 
 type Config struct {

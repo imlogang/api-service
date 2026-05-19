@@ -14,7 +14,7 @@ import (
 	"github.com/imlogang/api-service/cmd/db"
 	"github.com/imlogang/api-service/cmd/internal"
 	"github.com/imlogang/api-service/cmd/setup"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/circleci/ex/o11y"
 	"github.com/circleci/ex/system"
