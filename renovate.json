@@ -1,13 +1,19 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ],
+  "extends": ["config:recommended"],
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch"],
       "matchCurrentVersion": "!/^0/",
       "automerge": true
+    },
+    {
+      "matchPackageNames": ["github.com/circleci/ex"],
+      "versioning": "loose",
+      "automerge": true
     }
-  ]
+  ],
+  "gomod": {
+    "enabled": true
+  }
 }
