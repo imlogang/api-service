@@ -2,7 +2,9 @@ package setup
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/circleci/ex/config/o11y"
 	"github.com/circleci/ex/config/secret"
@@ -56,6 +58,8 @@ const (
 
 func addSampling(cfg o11y.OtelConfig) o11y.OtelConfig {
 	cfg.SampleTraces = true
+	cfg.SampleKeyFunc = defaultSampleFn
+
 	cfg.SampleRates = map[string]uint{
 		includeAll:  1,
 		includeMany: 100,
@@ -63,4 +67,46 @@ func addSampling(cfg o11y.OtelConfig) o11y.OtelConfig {
 		includeNone: o11y.SampleOut,
 	}
 	return cfg
+}
+
+func defaultSampleFn(fields map[string]any) string {
+	if _, ok := fields["error"]; ok {
+		return includeAll
+	}
+
+	if intField(fields, "http.status_code") >= 500 {
+		return includeAll
+	}
+
+	if _, ok := fields["warning"]; ok {
+		return includeMany
+	}
+
+	if _, gotServer := fields["http.server_name"]; gotServer {
+		return fmt.Sprintf("%s %v",
+			fields["http.route"],
+			fields["http.status_code"],
+		)
+	}
+
+	name := stringField(fields, "name")
+	if strings.HasPrefix(name, "db:") {
+		return includeMany
+	}
+
+	return name
+}
+
+func stringField(fields map[string]any, key string) (val string) {
+	if n, ok := fields[key]; ok {
+		val, _ = n.(string)
+	}
+	return val
+}
+
+func intField(fields map[string]any, key string) (val int) {
+	if n, ok := fields[key]; ok {
+		val, _ = n.(int)
+	}
+	return val
 }
