@@ -14,7 +14,7 @@ import (
 	"github.com/imlogang/api-service/cmd/db"
 	"github.com/imlogang/api-service/cmd/internal"
 	"github.com/imlogang/api-service/cmd/setup"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/circleci/ex/o11y"
 	"github.com/circleci/ex/system"
@@ -97,7 +97,7 @@ func testDatabase(ctx context.Context) {
 	defer span.End()
 
 	config := db.LoadConfig()
-	_, err := config.TestDBConnection()
+	_, err := config.TestDBConnection(ctx)
 	if err != nil {
 		databaseError := fmt.Sprintf("database error: %s", err)
 		o11y.AddFieldToTrace(ctx, "db-check", databaseError)
@@ -118,12 +118,12 @@ func testDatabase(ctx context.Context) {
 
 func ensurePokemonScoresTable(ctx context.Context) (err error) {
 	config := db.LoadConfig()
-	DB, err := config.Connect()
+	DB, err := config.Connect(ctx)
 	if err != nil {
 		return err
 	}
 	defer func(DB *pgx.Conn) {
-		err := DB.Close()
+		err := DB.Close(ctx)
 		if err != nil {
 			return
 		}
@@ -132,7 +132,7 @@ func ensurePokemonScoresTable(ctx context.Context) (err error) {
 	ctx, span := o11y.StartSpan(ctx, "db.ensure_pokemon_scores")
 	defer o11y.End(span, &err)
 
-	_, err = DB.Exec(`
+	_, err = DB.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS pokemon_scores (
 			id SERIAL PRIMARY KEY
 		);
