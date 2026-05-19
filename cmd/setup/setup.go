@@ -34,34 +34,33 @@ func O11ySetup() *Setup {
 }
 
 func LoadO11y(ctx context.Context, mode string, cfg Setup, version string) (context.Context, func(context.Context), error) {
-	o11ycfg := o11y.Config{
-		RollbarDisabled:  true,
-		HoneycombEnabled: cfg.O11yHoneycombEnabled,
-		HoneycombHost:    cfg.O11yHoneycombHost,
-		HoneycombKey:     cfg.O11yHoneycombKey,
-		HoneycombDataset: cfg.O11yHoneycombDataset,
-		Service:          cfg.O11yService,
-		Format:           cfg.O11yFormat,
-		Mode:             mode,
-		StatsNamespace:   cfg.StatsNamespace,
-		Version:          version,
+	o11ycfg := o11y.OtelConfig{
+		RollbarDisabled:   true,
+		HTTPTracesURL:     cfg.O11yHoneycombHost,
+		HTTPAuthorization: cfg.O11yHoneycombKey,
+		Dataset:           cfg.O11yHoneycombDataset,
+		Service:           cfg.O11yService,
+		Mode:              mode,
+		StatsNamespace:    cfg.StatsNamespace,
+		Version:           version,
 	}
-	return o11y.Setup(ctx, addSampling(o11ycfg))
+	return o11y.Otel(ctx, addSampling(o11ycfg))
 }
 
-func addSampling(cfg o11y.Config) o11y.Config {
+const (
+	includeAll  = "includeAll"
+	includeMany = "includeMany"
+	includeSome = "includeSome"
+	includeNone = "includeNone"
+)
+
+func addSampling(cfg o11y.OtelConfig) o11y.OtelConfig {
 	cfg.SampleTraces = true
-	cfg.SampleRates = map[string]int{
-		"/api/private/list_tables 200":            1000,
-		"/api/private/create_table 200":           1000,
-		"/api/private/delete_table 200":           1000,
-		"/api/private/update_table_with_user 200": 1000,
-		"/api/private/get_current_score 200":      1000,
-		"/api/private/update_user_score 200":      1000,
-		"/api/private/get_pokemon 200":            1000,
-		"/api/private/put_answer 200":             1000,
-		"/api/private/get_answer 200":             1000,
-		"/api/private/leaderboard 200":            1000,
+	cfg.SampleRates = map[string]uint{
+		includeAll:  1,
+		includeMany: 100,
+		includeSome: 1000,
+		includeNone: o11y.SampleOut,
 	}
 	return cfg
 }
