@@ -82,7 +82,7 @@ jobs:
       - install-trivy
       - run:
           name: scan image
-          command: trivy image --exit-code 1 --severity=CRITICAL,HIGH -ignore-unfixed  imlogang/go-api:$TAG 
+          command: trivy image --exit-code 1 --severity=CRITICAL,HIGH --ignore-unfixed  imlogang/go-api:$TAG 
       - run: 
           name: push image
           command: |
