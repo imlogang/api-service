@@ -3,30 +3,25 @@ package setup
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/circleci/ex/config/o11y"
-	"github.com/circleci/ex/config/secret"
 )
 
 type Setup struct {
 	O11yStatsd           string
 	O11yHoneycombEnabled bool
-	O11yHoneycombHost    string
-	O11yHoneycombKey     secret.String
 	O11yHoneycombDataset string
 	O11yService          string
 	O11yFormat           string
 	StatsNamespace       string
+	O11yGrpcHostAndPort  string
 }
 
 func O11ySetup() *Setup {
-	hcKey := os.Getenv("HC_TOKEN")
 	cfg := &Setup{
-		O11yHoneycombKey:     secret.String(hcKey),
 		O11yHoneycombEnabled: true,
-		O11yHoneycombHost:    "https://api.honeycomb.io",
+		O11yGrpcHostAndPort:  "opentelementry-opentelemetry-collector.otel.svc.cluster.local:4317",
 		O11yHoneycombDataset: "mickrok8s",
 		O11yService:          "api-service",
 		O11yFormat:           "json",
@@ -37,15 +32,14 @@ func O11ySetup() *Setup {
 
 func LoadO11y(ctx context.Context, mode string, cfg Setup, version string) (context.Context, func(context.Context), error) {
 	o11ycfg := o11y.OtelConfig{
-		RollbarDisabled:   true,
-		HTTPTracesURL:     cfg.O11yHoneycombHost,
-		HTTPAuthorization: cfg.O11yHoneycombKey,
-		Dataset:           cfg.O11yHoneycombDataset,
-		Service:           cfg.O11yService,
-		Mode:              mode,
-		StatsNamespace:    cfg.StatsNamespace,
-		Version:           version,
-		UseEnvironments:   true,
+		RollbarDisabled: true,
+		GrpcHostAndPort: cfg.O11yGrpcHostAndPort,
+		Dataset:         cfg.O11yHoneycombDataset,
+		Service:         cfg.O11yService,
+		Mode:            mode,
+		StatsNamespace:  cfg.StatsNamespace,
+		Version:         version,
+		UseEnvironments: true,
 	}
 	return o11y.Otel(ctx, addSampling(o11ycfg))
 }
