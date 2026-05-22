@@ -177,7 +177,7 @@ func (a *API) GetPokemonHandler(c *gin.Context) {
 	ctx, getPokemonHandlerSpan := o11y.StartSpan(ctx, "GetPokemonHandler")
 	defer o11y.End(getPokemonHandlerSpan, &err)
 
-	pokemon, err := games.GetPokemon()
+	pokemon, err := games.GetPokemon(ctx)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
