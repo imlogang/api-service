@@ -18,10 +18,6 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-global:
-  security:
-    allowInsecureImages: true
-
 database:
   host: "ubuntu-postgresql-k8s-server.logangodsey.com"
   port: "5432"

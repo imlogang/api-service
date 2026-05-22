@@ -58,16 +58,6 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secretName | quote }}
-                  key: USERNAME
-            - name: PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secretName | quote }}
-                  key: PASSWORD
             - name: POSTGRES_HOST
               value: {{ .Values.database.host }}
             - name: POSTGRES_PORT
@@ -79,11 +69,6 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.database.passwordSecret.name }}
                   key: {{ .Values.database.passwordSecret.key }}
-            - name: HC_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secretName | quote  }}
-                  key: HC_TOKEN 
             - name: POSTGRES_DB
               value: {{ .Values.database.name }}
           ports:
