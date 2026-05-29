@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/circleci/ex/o11y"
 	"github.com/gin-gonic/gin"
-	"github.com/imlogang/api-service/cmd/db"
-	"github.com/imlogang/api-service/cmd/games"
+	"github.com/imlogang/api-service/internal/db"
+	"github.com/imlogang/api-service/internal/games"
 	"net/http"
 )
 

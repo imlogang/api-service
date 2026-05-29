@@ -11,8 +11,8 @@ import (
 	"github.com/circleci/ex/httpserver"
 	"github.com/circleci/ex/httpserver/healthcheck"
 	"github.com/circleci/ex/termination"
-	"github.com/imlogang/api-service/cmd/db"
-	"github.com/imlogang/api-service/cmd/internal"
+	"github.com/imlogang/api-service/internal/db"
+	"github.com/imlogang/api-service/internal/internalapi"
 	"github.com/imlogang/api-service/cmd/setup"
 	"github.com/jackc/pgx/v5"
 
