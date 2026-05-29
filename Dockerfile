@@ -3,6 +3,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd ./cmd
+COPY internal ./internal
 ARG VERSION
 ARG BUILD_DATE
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
