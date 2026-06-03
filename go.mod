@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/circleci/ex v1.0.21361-c8a40df
 	github.com/gin-gonic/gin v1.12.0
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/mtslzr/pokeapi-go v1.4.0
 	gotest.tools/v3 v3.5.2
 )
