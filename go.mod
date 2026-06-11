@@ -6,7 +6,7 @@ toolchain go1.26.4
 
 require (
 	github.com/alecthomas/kong v1.15.0
-	github.com/circleci/ex v1.0.21402-fc22e8c
+	github.com/circleci/ex v1.0.21508-8dadd8f
 	github.com/gin-gonic/gin v1.12.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/mtslzr/pokeapi-go v1.4.0
@@ -46,7 +46,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
-	github.com/quic-go/quic-go v0.59.0 // indirect
+	github.com/quic-go/quic-go v0.59.1 // indirect
 	github.com/rollbar/rollbar-go v1.4.8 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
