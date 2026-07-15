@@ -6,7 +6,7 @@ toolchain go1.26.5
 
 require (
 	github.com/alecthomas/kong v1.15.0
-	github.com/circleci/ex v1.0.21789-3692b27
+	github.com/circleci/ex v1.0.21958-ed8dd73
 	github.com/gin-gonic/gin v1.12.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/mtslzr/pokeapi-go v1.4.0
@@ -64,7 +64,7 @@ require (
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
