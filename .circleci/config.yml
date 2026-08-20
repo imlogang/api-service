@@ -14,7 +14,7 @@ executors:
   test:
     resource_class: logan/medium_plus
     docker:
-      - image: cimg/go:1.26
+      - image: cimg/go:1.27
         environment:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
@@ -30,7 +30,7 @@ executors:
           POSTGRES_INITDB_ARGS: "-c log_statement=all -c log_destination=stderr -c logging_collector=off"
   lint:
     docker:
-      - image: cimg/go:1.26
+      - image: cimg/go:1.27
     resource_class: logan/medium_plus
 
 commands:
