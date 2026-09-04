@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   go: circleci/go@4.0.0
+  beemoviebot-orb: logan/beemoviebot-orb@0
 
 executors:
   machine_medium:
@@ -80,7 +81,7 @@ jobs:
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
               -t imlogang/go-api:$TAG \
               .
-      - install-trivy
+      - beemoviebot-orb/install_trivy
       - run:
           name: scan image
           command: |
