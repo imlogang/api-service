@@ -13,7 +13,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
       ./cmd/main.go
 
 FROM alpine:latest AS final
-RUN apk --no-cache add ca-certificates curl
+RUN apk --no-cache upgrade \
+    && apk --no-cache add ca-certificates curl
 WORKDIR /
 COPY --from=builder /app/api-service /api-service
 ENTRYPOINT ["/api-service"]
