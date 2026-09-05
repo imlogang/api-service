@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   go: circleci/go@4.0.0
-  beemoviebot-orb: logan/beemoviebot-orb@0
+  reusable-commands: logan/reusable-commands@0
 
 executors:
   machine_medium:
@@ -46,20 +46,6 @@ commands:
               echo "export TAG='$TAG'" >> "$BASH_ENV"
               source $BASH_ENV
               echo $TAG
-  install-trivy:
-    steps:
-      - run:
-          name: install trivy
-          command: |
-            if command -v trivy >/dev/null 2>&1; then
-                echo "Trivy already installed"
-                exit 0
-            fi
-            sudo apt-get install wget gnupg
-            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-            echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-            sudo apt-get update
-            sudo apt-get install trivy
             
 jobs:
   build-image:
@@ -81,7 +67,7 @@ jobs:
               --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
               -t imlogang/go-api:$TAG \
               .
-      - beemoviebot-orb/install_trivy
+      - reusable-commands/install_trivy
       - run:
           name: scan image
           command: |
