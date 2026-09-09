@@ -22,6 +22,8 @@ github.com/circleci/ex v1.0.22407-e9f3b66 h1:t/DvABYgxQW4jfwsA0AVpSo5N2RQmrVN2lq
 github.com/circleci/ex v1.0.22407-e9f3b66/go.mod h1:6/lGMtewY7zJx54aaEQa+aKRJh0+4fpIFnq2EbyzXeo=
 github.com/circleci/ex v1.0.23239-a4aadaf h1:pjdbAIJTt8LE+s9ljPS/Ym3yMKJMg8bHj7nz0AYaPho=
 github.com/circleci/ex v1.0.23239-a4aadaf/go.mod h1:6n3nq+Qy59kS8CD7MR6HMPatPjeAWHllNl5gG2G6AVE=
+github.com/circleci/ex v1.0.23342-34d1b46 h1:TDji1A6jcglFtXBJDcUmPCoh32r4bDp+Tm70gzXwaBY=
+github.com/circleci/ex v1.0.23342-34d1b46/go.mod h1:zOAFsP7+oirqC++5Eirm1oKl4X72q+2t5kRvx6Lg2y4=
 github.com/cloudwego/base64x v0.1.6 h1:t11wG9AECkCDk5fMSoxmufanudBtJ+/HemLstXDLI2M=
 github.com/cloudwego/base64x v0.1.6/go.mod h1:OFcloc187FXDaYHvrNIjxSe8ncn0OOM8gEHfghB2IPU=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
