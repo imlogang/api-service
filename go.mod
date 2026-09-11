@@ -6,7 +6,7 @@ toolchain go1.27.1
 
 require (
 	github.com/alecthomas/kong v1.16.1
-	github.com/circleci/ex v1.0.23464-9c41bc2
+	github.com/circleci/ex v1.0.23505-70177a9
 	github.com/gin-gonic/gin v1.12.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/mtslzr/pokeapi-go v1.4.0
@@ -20,6 +20,7 @@ require (
 	github.com/bytedance/sonic v1.15.0 // indirect
 	github.com/bytedance/sonic/loader v0.5.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
+	github.com/cenkalti/backoff/v7 v7.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
