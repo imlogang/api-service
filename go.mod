@@ -6,7 +6,7 @@ toolchain go1.27.1
 
 require (
 	github.com/alecthomas/kong v1.16.1
-	github.com/circleci/ex v1.0.23636-31de393
+	github.com/circleci/ex v1.0.23661-da6c976
 	github.com/gin-gonic/gin v1.12.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/mtslzr/pokeapi-go v1.4.0
