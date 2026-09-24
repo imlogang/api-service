@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  go: circleci/go@4.0.0
+  go: circleci/go@4.0.2
   reusable-commands: logan/reusable-commands@0
 
 executors:
