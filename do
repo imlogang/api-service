@@ -10,7 +10,7 @@ helm_dep_update() {
 # shellcheck disable=SC2034
 help_run_tests_ci="Run tests in CI"
 run_tests_ci() {
-  go list ./...  | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname -- -v"
+  go list ./...  | circleci tests run --command "xargs gotestsum --junitfile junit.xml --format testname -- -v -count=1"
 }
 
 help_lint="Run lint"
