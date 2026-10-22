@@ -80,16 +80,19 @@ func (s *Store) HealthChecks() (name string, ready, live func(ctx context.Contex
 	return "postgres", s.pool.Ping, nil
 }
 
-func (s *Store) EnsurePokemonScoresTable(ctx context.Context) error {
-	_, err := s.pool.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS pokemon_scores (
-			id SERIAL PRIMARY KEY
-		);
+// Schema is applied at startup, and by the tests to each fresh database.
+const Schema = `
+	CREATE TABLE IF NOT EXISTS pokemon_scores (
+		id SERIAL PRIMARY KEY
+	);
 
-		ALTER TABLE pokemon_scores
-			ADD COLUMN IF NOT EXISTS username TEXT UNIQUE,
-			ADD COLUMN IF NOT EXISTS score INTEGER NOT NULL DEFAULT 0;
-	`)
+	ALTER TABLE pokemon_scores
+		ADD COLUMN IF NOT EXISTS username TEXT UNIQUE,
+		ADD COLUMN IF NOT EXISTS score INTEGER NOT NULL DEFAULT 0;
+`
+
+func (s *Store) EnsurePokemonScoresTable(ctx context.Context) error {
+	_, err := s.pool.Exec(ctx, Schema)
 	return err
 }
 
