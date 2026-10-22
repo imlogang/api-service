@@ -99,8 +99,6 @@ func TestPokemon_FetchesSpeciesOnce(t *testing.T) {
 	for range 10 {
 		_, err := p.Round(ctx)
 		assert.NilError(t, err)
-		_, err = p.Random(ctx)
-		assert.NilError(t, err)
 	}
 	assert.Check(t, cmp.Equal(api.requests.Load(), int32(1)))
 }
@@ -125,13 +123,4 @@ func TestPokemon_TooFewSpecies(t *testing.T) {
 
 	_, err := p.Round(testcontext.Background())
 	assert.Check(t, cmp.ErrorContains(err, "need at least 4 species"))
-}
-
-func TestPokemon_Random(t *testing.T) {
-	names := []string{"bulbasaur", "ivysaur", "venusaur"}
-	p := NewPokemon(newFakePokeAPI(t, names...).URL)
-
-	name, err := p.Random(testcontext.Background())
-	assert.NilError(t, err)
-	assert.Check(t, cmp.Contains(names, name))
 }

@@ -21,7 +21,6 @@ type returnBody struct {
 	Hello        string `json:"hello,omitempty"`
 	UpdateAnswer string `json:"update_answer,omitempty"`
 	Error        string `json:"error,omitempty"`
-	AddedUser    string `json:"added_user,omitempty"`
 }
 
 type scoreResponse struct {
@@ -33,10 +32,6 @@ type leaderboardResponse struct {
 	Leaderboard []db.LeaderboardEntry `json:"leaderboard"`
 }
 
-type pokemonResponse struct {
-	Pokemon string `json:"pokemon"`
-}
-
 type roundResponse struct {
 	Game string `json:"game"`
 	games.Round
@@ -44,29 +39,6 @@ type roundResponse struct {
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, returnBody{Hello: "Hello world!"})
-}
-
-func (a *API) UpdateTableWithUserHandler(c *gin.Context) {
-	var requestBody requestBody
-	ctx := c.Request.Context()
-	err := c.BindJSON(&requestBody)
-
-	ctx, updateTableWithUserSpan := o11y.StartSpan(ctx, "UpdateTableWithUserHandler")
-	defer o11y.End(updateTableWithUserSpan, &err)
-	if err != nil {
-		o11y.AddFieldToTrace(ctx, "update-table-with-user", requestBody)
-		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
-		return
-	}
-
-	_, err = a.store.UpdateTableWithUser(requestBody.TableName, requestBody.User, ctx)
-	if err != nil {
-		o11y.AddFieldToTrace(ctx, "db-error", err)
-		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
-		return
-	}
-	c.Header("Content-Type", "application/json")
-	c.JSON(http.StatusOK, returnBody{AddedUser: requestBody.User})
 }
 
 func (a *API) GetScoreHandler(c *gin.Context) {
@@ -120,24 +92,6 @@ func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
 	}
 	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusOK, returnBody{UpdateAnswer: sql})
-}
-
-func (a *API) GetPokemonHandler(c *gin.Context) {
-	ctx := c.Request.Context()
-	var err error
-
-	ctx, getPokemonHandlerSpan := o11y.StartSpan(ctx, "GetPokemonHandler")
-	defer o11y.End(getPokemonHandlerSpan, &err)
-
-	pokemon, err := a.getPokemon(ctx)
-	if err != nil {
-		o11y.AddFieldToTrace(ctx, "db-error", err)
-		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
-		return
-	}
-
-	o11y.AddFieldToTrace(ctx, "pokemon", pokemon)
-	c.JSON(http.StatusOK, pokemonResponse{Pokemon: pokemon})
 }
 
 func (a *API) LeaderboardHandler(c *gin.Context) {

@@ -113,21 +113,22 @@ func TestAPI_HelloWorldHandler(t *testing.T) {
 	assert.Check(t, cmp.DeepEqual(decode(t, w), returnBody{Hello: "Hello world!"}))
 }
 
-func TestAPI_UpdateTableWithUser(t *testing.T) {
+// Users are created on first use, by get_current_score or increment_score.
+func TestAPI_GetCurrentScoreHandler_CreatesUsers(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
 
 	// o'brien would have broken the old string-formatted INSERT.
-	for _, user := range []string{"test-user", "test-user-2", "o'brien"} {
+	for _, user := range []string{"test-user", "o'brien"} {
 		t.Run(user, func(t *testing.T) {
-			w := f.do(t, "PUT", "/api/private/update_table_with_user", requestBody{
-				TableName: "pokemon_scores",
-				User:      user,
-			})
-			assert.Equal(t, w.Code, 200)
-			assert.Check(t, cmp.DeepEqual(decode(t, w), returnBody{AddedUser: user}))
-
 			assert.Equal(t, f.score(t, user), 0)
+			assert.Equal(t, f.score(t, user), 0)
+
+			var count int
+			err := f.db.AdminDB.GetContext(testcontext.Background(), &count,
+				`SELECT COUNT(*) FROM pokemon_scores WHERE username = $1`, user)
+			assert.NilError(t, err)
+			assert.Equal(t, count, 1)
 		})
 	}
 }
@@ -278,7 +279,7 @@ func TestAPI_TableNameIsNotSQL(t *testing.T) {
 	assert.Check(t, cmp.DeepEqual(f.leaderboard(t), []db.LeaderboardEntry{{Username: "test-user", Score: 4}}))
 }
 
-func TestAPI_RemovedTableEndpoints(t *testing.T) {
+func TestAPI_RemovedEndpoints(t *testing.T) {
 	t.Parallel()
 	a, err := New(testcontext.Background(), nil)
 	assert.NilError(t, err)
@@ -288,6 +289,8 @@ func TestAPI_RemovedTableEndpoints(t *testing.T) {
 		"POST /api/private/create_table",
 		"DELETE /api/private/delete_table",
 		"GET /api/private/get_answer",
+		"GET /api/private/get_pokemon",
+		"PUT /api/private/update_table_with_user",
 	} {
 		t.Run(route, func(t *testing.T) {
 			method, path, _ := strings.Cut(route, " ")
@@ -296,27 +299,6 @@ func TestAPI_RemovedTableEndpoints(t *testing.T) {
 			assert.Equal(t, w.Code, 404)
 		})
 	}
-}
-
-func TestAPI_GetPokemonHandler(t *testing.T) {
-	t.Parallel()
-	a, err := New(testcontext.Background(), nil)
-	assert.NilError(t, err)
-	a.getPokemon = func(context.Context) (string, error) { return "meltan", nil }
-	f := &fixture{api: a}
-
-	t.Run("ok", func(t *testing.T) {
-		w := f.do(t, "GET", "/api/private/get_pokemon", nil)
-		assert.Equal(t, w.Code, 200)
-		assert.Check(t, cmp.DeepEqual(decodeInto[pokemonResponse](t, w), pokemonResponse{Pokemon: "meltan"}))
-	})
-
-	t.Run("pokeapi error", func(t *testing.T) {
-		a.getPokemon = func(context.Context) (string, error) { return "", errors.New("pokeapi is down") }
-		w := f.do(t, "GET", "/api/private/get_pokemon", nil)
-		assert.Equal(t, w.Code, 500)
-		assert.Check(t, cmp.Contains(decode(t, w).Error, "pokeapi is down"))
-	})
 }
 
 func TestAPI_IncrementScoreHandler(t *testing.T) {
