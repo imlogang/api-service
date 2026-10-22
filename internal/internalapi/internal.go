@@ -21,10 +21,6 @@ func New(ctx context.Context, store *db.Store) (*API, error) {
 	a := &API{Router: r, store: store}
 	o11y.Log(ctx, "New Internal router is called")
 	r.GET("/api/private/hello", a.HelloWorldHandler)
-	r.GET("/api/private/list_tables", a.ListTablesHandler)
-	r.POST("/api/private/create_table", a.CreateTableHandler)
-	r.DELETE("/api/private/delete_table", a.DeleteTableHandler)
-	r.GET("/api/private/get_answer", a.ReadAnswerFromDBHandler)
 	r.GET("/api/private/get_current_score", a.GetScoreHandler)
 	r.POST("/api/private/update_user_score", a.UpdateScoreForUserHandler)
 	r.GET("/api/private/get_pokemon", a.GetPokemonHandler)

@@ -4,20 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http/httptest"
 	"net/url"
-	"slices"
 	"strings"
 	"testing"
 
-	"github.com/circleci/ex/config/secret"
 	"github.com/circleci/ex/testing/dbfixture"
 	"github.com/circleci/ex/testing/testcontext"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 
 	"github.com/imlogang/api-service/internal/db"
+	"github.com/imlogang/api-service/internal/db/dbtest"
 )
 
 type fixture struct {
@@ -26,25 +24,13 @@ type fixture struct {
 	db    *dbfixture.Fixture
 }
 
-// newFixture gives each test its own freshly created database with db.Schema
-// applied, which is dropped when the test finishes.
+// newFixture gives each test its own freshly created and migrated database,
+// which is dropped when the test finishes.
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
-	ctx := testcontext.Background()
+	store, fix := dbtest.NewMigratedStore(t)
 
-	cfg := db.LoadConfig()
-	fix := dbfixture.SetupDB(ctx, t, db.Schema, dbfixture.Connection{
-		Host:     net.JoinHostPort(cfg.Host, cfg.Port),
-		User:     cfg.User,
-		Password: secret.String(cfg.Password),
-	})
-
-	cfg.DB = fix.DBName
-	store, err := db.New(ctx, cfg)
-	assert.NilError(t, err)
-	t.Cleanup(store.Close)
-
-	a, err := New(ctx, store)
+	a, err := New(testcontext.Background(), store)
 	assert.NilError(t, err)
 	return &fixture{api: a, store: store, db: fix}
 }
@@ -89,48 +75,6 @@ func TestAPI_HelloWorldHandler(t *testing.T) {
 	a.Router.ServeHTTP(w, httptest.NewRequest("GET", "http://localhost:8080/api/private/hello", nil))
 	assert.Equal(t, w.Code, 200)
 	assert.Check(t, cmp.DeepEqual(decode(t, w), returnBody{Hello: "Hello world!"}))
-}
-
-func TestAPI_CreateTable(t *testing.T) {
-	t.Parallel()
-	f := newFixture(t)
-
-	for _, table := range []string{"beemoviebot", "random_table"} {
-		t.Run(table, func(t *testing.T) {
-			w := f.do(t, "POST", "/api/private/create_table", requestBody{TableName: table})
-			assert.Equal(t, w.Code, 200)
-			assert.Check(t, cmp.DeepEqual(decode(t, w), returnBody{TableCreated: table}))
-		})
-	}
-}
-
-func TestAPI_ListTables(t *testing.T) {
-	t.Parallel()
-	f := newFixture(t)
-
-	w := f.do(t, "POST", "/api/private/create_table", requestBody{TableName: "beemoviebot"})
-	assert.Equal(t, w.Code, 200)
-
-	w = f.do(t, "GET", "/api/private/list_tables", nil)
-	assert.Equal(t, w.Code, 200)
-	tables := decode(t, w).Tables
-	slices.Sort(tables)
-	assert.Check(t, cmp.DeepEqual(tables, []string{"beemoviebot", "pokemon_scores"}))
-}
-
-func TestAPI_DeleteTable(t *testing.T) {
-	t.Parallel()
-	f := newFixture(t)
-
-	w := f.do(t, "POST", "/api/private/create_table", requestBody{TableName: "random_table"})
-	assert.Equal(t, w.Code, 200)
-
-	w = f.do(t, "DELETE", "/api/private/delete_table", requestBody{TableName: "random_table"})
-	assert.Equal(t, w.Code, 200)
-	assert.Check(t, cmp.DeepEqual(decode(t, w), returnBody{TableDeleted: "random_table"}))
-
-	w = f.do(t, "DELETE", "/api/private/delete_table", requestBody{TableName: "random_table"})
-	assert.Equal(t, w.Code, 500)
 }
 
 func TestAPI_UpdateTableWithUser(t *testing.T) {
@@ -281,58 +225,36 @@ func TestAPI_LeaderboardHandler_Empty(t *testing.T) {
 func TestAPI_TableNameIsNotSQL(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
-	const evil = "injection_test; DROP TABLE pokemon_scores"
+	f.addUser(t, "test-user", 4)
+	const evil = "pokemon_scores; DROP TABLE pokemon_scores"
 
-	w := f.do(t, "POST", "/api/private/create_table", requestBody{TableName: evil})
-	assert.Equal(t, w.Code, 200)
-
-	w = f.do(t, "GET", "/api/private/leaderboard?"+url.Values{"tablename": {"pokemon_scores; DROP TABLE pokemon_scores"}}.Encode(), nil)
+	w := f.do(t, "GET", "/api/private/leaderboard?"+url.Values{"tablename": {evil}}.Encode(), nil)
 	assert.Equal(t, w.Code, 500)
 
-	w = f.do(t, "DELETE", "/api/private/delete_table", requestBody{TableName: evil})
-	assert.Equal(t, w.Code, 200)
+	w = f.do(t, "GET", scoreURL(evil, "test-user"), nil)
+	assert.Equal(t, w.Code, 500)
 
-	w = f.do(t, "GET", "/api/private/list_tables", nil)
-	assert.Check(t, cmp.DeepEqual(decode(t, w).Tables, []string{"pokemon_scores"}))
+	w = f.do(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", nil)
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, w.Body.String(), "\nUsername: test-user, Score: 4\n")
 }
 
-func TestAPI_ReadAnswerFromDBHandler(t *testing.T) {
+func TestAPI_RemovedTableEndpoints(t *testing.T) {
 	t.Parallel()
-	f := newFixture(t)
-	_, err := f.store.PutAnswerInDB("answer_test", "pikachu", "ANSWER", "POSITION", 2)
+	a, err := New(testcontext.Background(), nil)
 	assert.NilError(t, err)
 
-	tests := []struct {
-		name         string
-		query        url.Values
-		expectedCode int
-		expectedResp string
-	}{
-		{
-			name:         "Read answer column",
-			query:        url.Values{"tablename": {"answer_test"}, "column": {"ANSWER"}},
-			expectedCode: 200,
-			expectedResp: "pikachu",
-		},
-		{
-			name:         "Read integer column",
-			query:        url.Values{"tablename": {"answer_test"}, "column": {"POSITION"}},
-			expectedCode: 200,
-			expectedResp: "2",
-		},
-		{
-			name:         "Missing column",
-			query:        url.Values{"tablename": {"answer_test"}},
-			expectedCode: 400,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w := f.do(t, "GET", "/api/private/get_answer?"+tt.query.Encode(), nil)
-			assert.Equal(t, w.Code, tt.expectedCode)
-			if tt.expectedResp != "" {
-				assert.Equal(t, w.Body.String(), tt.expectedResp)
-			}
+	for _, route := range []string{
+		"GET /api/private/list_tables",
+		"POST /api/private/create_table",
+		"DELETE /api/private/delete_table",
+		"GET /api/private/get_answer",
+	} {
+		t.Run(route, func(t *testing.T) {
+			method, path, _ := strings.Cut(route, " ")
+			w := httptest.NewRecorder()
+			a.Router.ServeHTTP(w, httptest.NewRequest(method, "http://localhost:8080"+path, nil))
+			assert.Equal(t, w.Code, 404)
 		})
 	}
 }

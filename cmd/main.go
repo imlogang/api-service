@@ -110,11 +110,10 @@ func loadDatabase(ctx context.Context, sys *system.System) (store *db.Store, err
 		return nil
 	})
 
-	err = ensurePokemonScoresTable(ctx, store)
+	err = migrate(ctx, store)
 	if err != nil {
-		o11y.AddFieldToTrace(ctx, "status", "schema_error")
-		o11y.AddFieldToTrace(ctx, "error", err.Error())
-		return store, nil
+		o11y.AddFieldToTrace(ctx, "status", "migration_error")
+		return nil, err
 	}
 
 	o11y.AddFieldToTrace(ctx, "db-check", "healthy")
@@ -122,18 +121,16 @@ func loadDatabase(ctx context.Context, sys *system.System) (store *db.Store, err
 	return store, nil
 }
 
-func ensurePokemonScoresTable(ctx context.Context, store *db.Store) (err error) {
-	ctx, span := o11y.StartSpan(ctx, "db.ensure_pokemon_scores")
+func migrate(ctx context.Context, store *db.Store) (err error) {
+	ctx, span := o11y.StartSpan(ctx, "db.migrate")
 	defer o11y.End(span, &err)
 
-	err = store.EnsurePokemonScoresTable(ctx)
+	applied, err := store.Migrate(ctx)
 	if err != nil {
-		o11y.AddFieldToTrace(ctx, "table", "pokemon_scores")
-		o11y.AddFieldToTrace(ctx, "error", err.Error())
 		return err
 	}
 
-	o11y.AddFieldToTrace(ctx, "table", "pokemon_scores")
-	o11y.AddFieldToTrace(ctx, "status", "ensured")
+	o11y.AddFieldToTrace(ctx, "migrations_applied", applied)
+	o11y.AddFieldToTrace(ctx, "migrations_applied_count", len(applied))
 	return nil
 }

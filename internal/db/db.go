@@ -80,127 +80,6 @@ func (s *Store) HealthChecks() (name string, ready, live func(ctx context.Contex
 	return "postgres", s.pool.Ping, nil
 }
 
-// Schema is applied at startup, and by the tests to each fresh database.
-const Schema = `
-	CREATE TABLE IF NOT EXISTS pokemon_scores (
-		id SERIAL PRIMARY KEY
-	);
-
-	ALTER TABLE pokemon_scores
-		ADD COLUMN IF NOT EXISTS username TEXT UNIQUE,
-		ADD COLUMN IF NOT EXISTS score INTEGER NOT NULL DEFAULT 0;
-`
-
-func (s *Store) EnsurePokemonScoresTable(ctx context.Context) error {
-	_, err := s.pool.Exec(ctx, Schema)
-	return err
-}
-
-func (s *Store) ListTables(ctx context.Context) ([]string, error) {
-	sql := `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`
-	rows, err := s.pool.Query(ctx, sql)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query tables: %v", err)
-	}
-
-	tableNames, err := pgx.CollectRows(rows, pgx.RowTo[string])
-	if err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %v", err)
-	}
-
-	if len(tableNames) == 0 {
-		return nil, fmt.Errorf("there are no tables in the database")
-	}
-	return tableNames, nil
-}
-
-func (s *Store) CreateTable(tableName string, ctx context.Context) (string, error) {
-	if tableName == "" {
-		return "", fmt.Errorf("the table name must not be empty")
-	}
-
-	sql := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (id SERIAL PRIMARY KEY, name TEXT);`, ident(tableName))
-	_, err := s.pool.Exec(ctx, sql)
-	if err != nil {
-		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
-	}
-
-	return fmt.Sprintf(`%s succesfully created.`, tableName), nil
-}
-
-func (s *Store) checkIfTableExists(tableName string) error {
-	if tableName == "" {
-		return fmt.Errorf("the table: %s must not be empty", tableName)
-	}
-	sql := `SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = $1);`
-	var exists bool
-	err := s.pool.QueryRow(context.Background(), sql, tableName).Scan(&exists)
-	if err != nil {
-		return fmt.Errorf("there was an error checking if the table exists: %s", err)
-	}
-	if exists {
-		return nil
-	} else {
-		_, err := s.CreateTable(tableName, context.Background())
-		if err != nil {
-			return fmt.Errorf("there was an error creating your table: %s", err)
-		}
-	}
-	return nil
-}
-
-func (s *Store) DeleteTable(tableName string, ctx context.Context) (string, error) {
-	if tableName == "" {
-		return "", fmt.Errorf("the table name must not be empty")
-	}
-	sql := fmt.Sprintf(`DROP TABLE %s`, ident(tableName))
-	_, err := s.pool.Exec(ctx, sql)
-	if err != nil {
-		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
-	}
-
-	return fmt.Sprintf(`%s succesfully deleted.`, tableName), nil
-}
-
-func (s *Store) AddColumnsIfNotExists(tableName string, ctx context.Context) error {
-	sql_username := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "username" VARCHAR(255);`, ident(tableName))
-	sql_score := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "score" INTEGER;`, ident(tableName))
-
-	_, err := s.pool.Exec(ctx, sql_username)
-	if err != nil {
-		return fmt.Errorf("error adding username columns: %s", err)
-	}
-
-	_, err = s.pool.Exec(ctx, sql_score)
-	if err != nil {
-		return fmt.Errorf("error adding score columns: %s", err)
-	}
-
-	return nil
-}
-
-func (s *Store) addColumnIfNotExistsAnswerTable(tableName string, column string, secondColumn string) error {
-	if tableName == "" || column == "" || secondColumn == "" {
-		return fmt.Errorf("tablename: %s, column: %s, or secondColumn: %s cannot be empty", tableName, column, secondColumn)
-	}
-
-	sql := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s VARCHAR(255);`, ident(tableName), ident(column))
-	sqlSecond := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s INTEGER`, ident(tableName), ident(secondColumn))
-
-	_, err := s.pool.Exec(context.Background(), sql)
-	if err != nil {
-		fmt.Printf("error adding %s columns: %s", column, err)
-		return fmt.Errorf("error adding %s columns: %s", column, err)
-	}
-	_, err = s.pool.Exec(context.Background(), sqlSecond)
-	if err != nil {
-		fmt.Printf("error adding %s columns: %s", secondColumn, err)
-		return fmt.Errorf("error adding %s columns: %w", secondColumn, err)
-	}
-
-	return nil
-}
-
 func (s *Store) AddUserIfNotExist(tableName string, username string, ctx context.Context) (string, error) {
 	if tableName == "" || username == "" {
 		return "", fmt.Errorf("tablename: %s, and username: %s, cannot be empty", tableName, username)
@@ -226,11 +105,6 @@ func (s *Store) AddUserIfNotExist(tableName string, username string, ctx context
 }
 
 func (s *Store) UpdateTableWithUser(tableName string, username string, ctx context.Context) (string, error) {
-	err := s.AddColumnsIfNotExists(tableName, ctx)
-	if err != nil {
-		return "", fmt.Errorf("error ensuring columns: %v", err)
-	}
-
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
 	}
@@ -238,7 +112,7 @@ func (s *Store) UpdateTableWithUser(tableName string, username string, ctx conte
 		return "", fmt.Errorf("the user must not be empty")
 	}
 	sql := fmt.Sprintf(`INSERT INTO %s ("username", "score") VALUES ($1, 0)`, ident(tableName))
-	_, err = s.pool.Exec(ctx, sql, username)
+	_, err := s.pool.Exec(ctx, sql, username)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
 	}
@@ -280,42 +154,6 @@ func (s *Store) UpdateScoreForUser(tableName string, username string, score int,
 	}
 
 	return "the score for the user has been updated", nil
-}
-
-func (s *Store) PutAnswerInDB(tablenName string, answer string, column string, secondColumn string, numberInArray int) (string, error) {
-	if tablenName == "" || answer == "" || column == "" || secondColumn == "" {
-		return "", fmt.Errorf("the tablename: %s, answer: %s, column: %s, numberInArray: %d, or secondColumn: %s cannot be empty", tablenName, answer, column, numberInArray, secondColumn)
-	}
-
-	err := s.checkIfTableExists(tablenName)
-	if err != nil {
-		return "", fmt.Errorf("there was an error creating your table: %s", err)
-	}
-	err = s.addColumnIfNotExistsAnswerTable(tablenName, column, secondColumn)
-	if err != nil {
-		return "", fmt.Errorf("there was an error adding your column: %s", column)
-	}
-
-	sql := fmt.Sprintf(`INSERT INTO %s ("id", "ANSWER", "POSITION") VALUES (1, $1, $2) ON CONFLICT ("id") DO UPDATE SET "ANSWER" = $1, "POSITION" = $2;`, ident(tablenName))
-	_, err = s.pool.Exec(context.Background(), sql, answer, numberInArray)
-	if err != nil {
-		return "", fmt.Errorf("there was an error updating/creating the row: %s", err)
-	}
-	return fmt.Sprintf("the %s table has been updated with %s", tablenName, answer), nil
-}
-
-func (s *Store) ReadAnswerFromDB(tableName string, column string, ctx context.Context) (string, error) {
-	if tableName == "" || column == "" {
-		return "", fmt.Errorf("tablename: %s or column: %s cannot be empty", tableName, column)
-	}
-
-	sql := fmt.Sprintf("SELECT %s::text FROM %s WHERE id = 1", ident(column), ident(tableName))
-	var answer string
-	err := s.pool.QueryRow(ctx, sql).Scan(&answer)
-	if err != nil {
-		return "", fmt.Errorf("there was an error finding the answer: %s", err)
-	}
-	return answer, nil
 }
 
 func (s *Store) GetLeaderboard(tableName string, ctx context.Context) (string, error) {

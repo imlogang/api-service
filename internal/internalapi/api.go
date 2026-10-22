@@ -11,91 +11,21 @@ import (
 )
 
 type requestBody struct {
-	TableName    string `json:"table_name"`
-	User         string `json:"username"`
-	Score        int    `json:"score"`
-	Column       string `json:"column"`
-	SecondColumn string `json:"second_column"`
-	NumInArray   int    `json:"numinarray"`
-	Answer       string `json:"answer"`
+	TableName string `json:"table_name"`
+	User      string `json:"username"`
+	Score     int    `json:"score"`
+	Column    string `json:"column"`
 }
 
 type returnBody struct {
-	Hello        string   `json:"hello,omitempty"`
-	Tables       []string `json:"tables,omitempty"`
-	TableCreated string   `json:"table_created,omitempty"`
-	TableDeleted string   `json:"table_deleted,omitempty"`
-	UpdateAnswer string   `json:"update_answer,omitempty"`
-	Error        string   `json:"error,omitempty"`
-	AddedUser    string   `json:"added_user,omitempty"`
+	Hello        string `json:"hello,omitempty"`
+	UpdateAnswer string `json:"update_answer,omitempty"`
+	Error        string `json:"error,omitempty"`
+	AddedUser    string `json:"added_user,omitempty"`
 }
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, returnBody{Hello: "Hello world!"})
-}
-
-func (a *API) ListTablesHandler(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	tables, err := a.store.ListTables(ctx)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
-		return
-	}
-
-	o11y.AddFieldToTrace(ctx, "list-tables", tables)
-	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
-
-	c.JSON(http.StatusOK, returnBody{Tables: tables})
-}
-
-func (a *API) CreateTableHandler(c *gin.Context) {
-	var requestBody requestBody
-	ctx := c.Request.Context()
-
-	err := c.BindJSON(&requestBody)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
-		return
-	}
-
-	sql, err := a.store.CreateTable(requestBody.TableName, ctx)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
-		return
-	}
-
-	ctx, createTableSpan := o11y.StartSpan(ctx, "CreateTableHandler")
-	defer o11y.End(createTableSpan, &err)
-	o11y.AddFieldToTrace(ctx, "create-tables", sql)
-	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
-
-	c.Header("Content-Type", "application/json")
-	c.JSON(http.StatusOK, returnBody{TableCreated: requestBody.TableName})
-}
-
-func (a *API) DeleteTableHandler(c *gin.Context) {
-	var requestBody requestBody
-	ctx := c.Request.Context()
-	err := c.BindJSON(&requestBody)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
-		return
-	}
-
-	sql, err := a.store.DeleteTable(requestBody.TableName, ctx)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
-		return
-	}
-
-	ctx, deleteTableSpan := o11y.StartSpan(ctx, "DeleteTableHandler")
-	defer o11y.End(deleteTableSpan, &err)
-	o11y.AddFieldToTrace(ctx, "delete-tables", sql)
-	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
-
-	c.Header("Content-Type", "application/json")
-	c.JSON(http.StatusOK, returnBody{TableDeleted: requestBody.TableName})
 }
 
 func (a *API) UpdateTableWithUserHandler(c *gin.Context) {
@@ -192,33 +122,6 @@ func (a *API) GetPokemonHandler(c *gin.Context) {
 	o11y.AddFieldToTrace(ctx, "pokemon", pokemon)
 	c.Header("Content-Type", "text/plain")
 	c.String(http.StatusOK, fmt.Sprintf("%s\n", pokemon))
-}
-
-func (a *API) ReadAnswerFromDBHandler(c *gin.Context) {
-	ctx := c.Request.Context()
-	tableName := c.Query("tablename")
-	column := c.Query("column")
-
-	ctx, answerFromTableSpan := o11y.StartSpan(ctx, "ReadAnswerFromDBHandler")
-	var err error
-	defer o11y.End(answerFromTableSpan, &err)
-
-	if tableName == "" || column == "" {
-		o11y.AddFieldToTrace(ctx, "table-name", tableName)
-		o11y.AddFieldToTrace(ctx, "column-name", column)
-		c.JSON(http.StatusBadRequest, returnBody{Error: "tablename or column required"})
-		return
-	}
-	answer, err := a.store.ReadAnswerFromDB(tableName, column, ctx)
-	if err != nil {
-		o11y.AddFieldToTrace(ctx, "db-error", err)
-		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
-		return
-	}
-	o11y.AddFieldToTrace(ctx, "answer", answer)
-	o11y.AddFieldToTrace(ctx, "request-remoteaddr", c.Request.RemoteAddr)
-	c.Header("Content-Type", "text/plain")
-	c.String(http.StatusOK, answer)
 }
 
 func (a *API) LeaderboardHandler(c *gin.Context) {
