@@ -3,7 +3,6 @@ package games
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand/v2"
 	"net/http"
@@ -81,18 +80,6 @@ func (p *Pokemon) Round(ctx context.Context) (Round, error) {
 		Options: options,
 		Image:   fmt.Sprintf(spriteURL, answer.id),
 	}, nil
-}
-
-// Random returns the name of one random species.
-func (p *Pokemon) Random(ctx context.Context) (string, error) {
-	all, err := p.allSpecies(ctx)
-	if err != nil {
-		return "", err
-	}
-	if len(all) == 0 {
-		return "", errors.New("PokeAPI returned no species")
-	}
-	return all[rand.IntN(len(all))].name, nil
 }
 
 // allSpecies returns the cached species list, fetching it on first use. A
