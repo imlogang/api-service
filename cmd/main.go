@@ -25,9 +25,9 @@ var (
 )
 
 type cli struct {
-	APIAddr            string        `long:"internal-addr" default:":8080" description:"internal addr"`
-	HealthcheckAPIAddr string        `long:"internal-addr" default:":8081" description:"internal addr for healthchecks"`
-	ShutdownDelay      time.Duration `long:"shutdown-delay" default:"30s" description:"shutdown delay"`
+	APIAddr            string        `name:"api-addr" default:":8080" help:"Address for the internal API."`
+	HealthcheckAPIAddr string        `name:"healthcheck-api-addr" default:":8081" help:"Address for the health check server."`
+	ShutdownDelay      time.Duration `name:"shutdown-delay" default:"30s" help:"Shutdown delay."`
 }
 
 func main() {
