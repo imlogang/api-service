@@ -2,11 +2,14 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/circleci/ex/testing/dbfixture"
@@ -37,15 +40,33 @@ func newFixture(t *testing.T) *fixture {
 
 func (f *fixture) do(t *testing.T, method, target string, body any) *httptest.ResponseRecorder {
 	t.Helper()
+	return f.doAccept(t, method, target, "", body)
+}
+
+// doAccept is do with an Accept header; "" sends none.
+func (f *fixture) doAccept(t *testing.T, method, target, accept string, body any) *httptest.ResponseRecorder {
+	t.Helper()
 	var b []byte
 	if body != nil {
 		var err error
 		b, err = json.Marshal(body)
 		assert.NilError(t, err)
 	}
+	req := httptest.NewRequest(method, "http://localhost:8080"+target, bytes.NewReader(b))
+	if accept != "" {
+		req.Header.Set("Accept", accept)
+	}
 	w := httptest.NewRecorder()
-	f.api.Router.ServeHTTP(w, httptest.NewRequest(method, "http://localhost:8080"+target, bytes.NewReader(b)))
+	f.api.Router.ServeHTTP(w, req)
 	return w
+}
+
+func decodeInto[T any](t *testing.T, w *httptest.ResponseRecorder) T {
+	t.Helper()
+	assert.Check(t, cmp.Contains(w.Header().Get("Content-Type"), "application/json"))
+	var resp T
+	assert.NilError(t, json.NewDecoder(w.Body).Decode(&resp))
+	return resp
 }
 
 func (f *fixture) addUser(t *testing.T, username string, score int) {
@@ -257,4 +278,149 @@ func TestAPI_RemovedTableEndpoints(t *testing.T) {
 			assert.Equal(t, w.Code, 404)
 		})
 	}
+}
+
+func TestAPI_GetCurrentScoreHandler_JSON(t *testing.T) {
+	t.Parallel()
+	f := newFixture(t)
+	f.addUser(t, "test-user", 3)
+
+	t.Run("existing user", func(t *testing.T) {
+		w := f.doAccept(t, "GET", scoreURL("pokemon_scores", "test-user"), "application/json", nil)
+		assert.Equal(t, w.Code, 200)
+		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "test-user", Score: 3}))
+	})
+
+	t.Run("unknown user", func(t *testing.T) {
+		w := f.doAccept(t, "GET", scoreURL("pokemon_scores", "new-user"), "application/json", nil)
+		assert.Equal(t, w.Code, 200)
+		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "new-user", Score: 0}))
+	})
+
+	// node-fetch, which the bot uses, sends */* by default.
+	for _, accept := range []string{"", "*/*", "text/plain"} {
+		t.Run("text for Accept "+accept, func(t *testing.T) {
+			w := f.doAccept(t, "GET", scoreURL("pokemon_scores", "test-user"), accept, nil)
+			assert.Equal(t, w.Code, 200)
+			assert.Equal(t, w.Body.String(), "Score for test-user: 3\n")
+		})
+	}
+}
+
+func TestAPI_LeaderboardHandler_JSON(t *testing.T) {
+	t.Parallel()
+	f := newFixture(t)
+	f.addUser(t, "bronze", 1)
+	f.addUser(t, "gold", 9)
+	f.addUser(t, "silver", 4)
+
+	w := f.doAccept(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", "application/json", nil)
+	assert.Equal(t, w.Code, 200)
+	assert.Check(t, cmp.DeepEqual(decodeInto[leaderboardResponse](t, w), leaderboardResponse{
+		Leaderboard: []db.LeaderboardEntry{
+			{Username: "gold", Score: 9},
+			{Username: "silver", Score: 4},
+			{Username: "bronze", Score: 1},
+		},
+	}))
+
+	w = f.doAccept(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", "*/*", nil)
+	assert.Equal(t, w.Body.String(),
+		"\nUsername: gold, Score: 9\nUsername: silver, Score: 4\nUsername: bronze, Score: 1\n")
+}
+
+func TestAPI_LeaderboardHandler_JSONEmpty(t *testing.T) {
+	t.Parallel()
+	f := newFixture(t)
+
+	w := f.doAccept(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", "application/json", nil)
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, strings.TrimSpace(w.Body.String()), `{"leaderboard":[]}`)
+}
+
+func TestAPI_GetPokemonHandler(t *testing.T) {
+	t.Parallel()
+	a, err := New(testcontext.Background(), nil)
+	assert.NilError(t, err)
+	a.getPokemon = func(context.Context) (string, error) { return "meltan", nil }
+	f := &fixture{api: a}
+
+	t.Run("text keeps its trailing newline", func(t *testing.T) {
+		w := f.do(t, "GET", "/api/private/get_pokemon", nil)
+		assert.Equal(t, w.Code, 200)
+		assert.Equal(t, w.Body.String(), "meltan\n")
+	})
+
+	t.Run("json", func(t *testing.T) {
+		w := f.doAccept(t, "GET", "/api/private/get_pokemon", "application/json", nil)
+		assert.Equal(t, w.Code, 200)
+		assert.Check(t, cmp.DeepEqual(decodeInto[pokemonResponse](t, w), pokemonResponse{Pokemon: "meltan"}))
+	})
+
+	t.Run("pokeapi error", func(t *testing.T) {
+		a.getPokemon = func(context.Context) (string, error) { return "", errors.New("pokeapi is down") }
+		w := f.doAccept(t, "GET", "/api/private/get_pokemon", "application/json", nil)
+		assert.Equal(t, w.Code, 500)
+		assert.Check(t, cmp.Contains(decode(t, w).Error, "pokeapi is down"))
+	})
+}
+
+func TestAPI_IncrementScoreHandler(t *testing.T) {
+	t.Parallel()
+	f := newFixture(t)
+	f.addUser(t, "test-user", 5)
+	f.addUser(t, "bystander", 2)
+
+	increment := func(t *testing.T, username string) scoreResponse {
+		t.Helper()
+		w := f.do(t, "POST", "/api/private/increment_score", requestBody{TableName: "pokemon_scores", User: username})
+		assert.Equal(t, w.Code, 200)
+		return decodeInto[scoreResponse](t, w)
+	}
+
+	t.Run("existing user", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(increment(t, "test-user"), scoreResponse{Username: "test-user", Score: 6}))
+	})
+
+	t.Run("new user starts at 1", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(increment(t, "new-user"), scoreResponse{Username: "new-user", Score: 1}))
+		assert.Check(t, cmp.DeepEqual(increment(t, "new-user"), scoreResponse{Username: "new-user", Score: 2}))
+	})
+
+	t.Run("other users are untouched", func(t *testing.T) {
+		w := f.do(t, "GET", scoreURL("pokemon_scores", "bystander"), nil)
+		assert.Equal(t, w.Body.String(), "Score for bystander: 2\n")
+	})
+
+	t.Run("missing username", func(t *testing.T) {
+		w := f.do(t, "POST", "/api/private/increment_score", requestBody{TableName: "pokemon_scores"})
+		assert.Equal(t, w.Code, 400)
+	})
+
+	t.Run("unknown table", func(t *testing.T) {
+		w := f.do(t, "POST", "/api/private/increment_score", requestBody{TableName: "nope", User: "test-user"})
+		assert.Equal(t, w.Code, 500)
+	})
+}
+
+// The bot used to read the score, add one, and write it back, so two correct
+// answers at the same moment could lose a point. Increments must all land.
+func TestAPI_IncrementScoreHandler_Concurrent(t *testing.T) {
+	t.Parallel()
+	f := newFixture(t)
+
+	const n = 25
+	var wg sync.WaitGroup
+	for range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			w := f.do(t, "POST", "/api/private/increment_score", requestBody{TableName: "pokemon_scores", User: "racer"})
+			assert.Check(t, cmp.Equal(w.Code, 200))
+		}()
+	}
+	wg.Wait()
+
+	w := f.do(t, "GET", scoreURL("pokemon_scores", "racer"), nil)
+	assert.Equal(t, w.Body.String(), fmt.Sprintf("Score for racer: %d\n", n))
 }

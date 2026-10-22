@@ -156,36 +156,43 @@ func (s *Store) UpdateScoreForUser(tableName string, username string, score int,
 	return "the score for the user has been updated", nil
 }
 
-func (s *Store) GetLeaderboard(tableName string, ctx context.Context) (string, error) {
+// IncrementScore adds one point to the user's score in a single statement,
+// creating the user if needed, and returns the new score.
+func (s *Store) IncrementScore(ctx context.Context, tableName string, username string) (int, error) {
+	if tableName == "" || username == "" {
+		return 0, fmt.Errorf("tablename: %s and username: %s must not be empty", tableName, username)
+	}
+	sql := fmt.Sprintf(`INSERT INTO %s AS t ("username", "score") VALUES ($1, 1)
+		ON CONFLICT ("username") DO UPDATE SET "score" = COALESCE(t."score", 0) + 1
+		RETURNING "score"`, ident(tableName))
+	var score int
+	err := s.pool.QueryRow(ctx, sql, username).Scan(&score)
+	if err != nil {
+		return 0, fmt.Errorf("there was an error incrementing the users score. %s", err)
+	}
+	return score, nil
+}
+
+type LeaderboardEntry struct {
+	Username string `json:"username"`
+	Score    int    `json:"score"`
+}
+
+// GetLeaderboard returns the top 10 users by score, highest first.
+func (s *Store) GetLeaderboard(tableName string, ctx context.Context) ([]LeaderboardEntry, error) {
 	if tableName == "" {
-		return "", fmt.Errorf("tablename: %s", tableName)
+		return nil, fmt.Errorf("tablename: %s", tableName)
 	}
 
 	sql := fmt.Sprintf(`SELECT "username", "score" FROM %s ORDER BY "score" DESC LIMIT 10;`, ident(tableName))
 	rows, err := s.pool.Query(ctx, sql)
 	if err != nil {
-		return "", fmt.Errorf("error executing query: %s", err)
-	}
-	defer rows.Close()
-
-	var leaderboard string
-	for rows.Next() {
-		var username string
-		var score int
-		err := rows.Scan(&username, &score)
-		if err != nil {
-			return "", fmt.Errorf("error scanning row: %s", err)
-		}
-		leaderboard += fmt.Sprintf("Username: %s, Score: %d\n", username, score)
+		return nil, fmt.Errorf("error executing query: %s", err)
 	}
 
-	if err = rows.Err(); err != nil {
-		return "", fmt.Errorf("error iterating through rows: %s", err)
+	leaderboard, err := pgx.CollectRows(rows, pgx.RowToStructByPos[LeaderboardEntry])
+	if err != nil {
+		return nil, fmt.Errorf("error reading leaderboard rows: %s", err)
 	}
-
-	if leaderboard == "" {
-		return "No leaderboard data found.", nil
-	}
-
 	return leaderboard, nil
 }
