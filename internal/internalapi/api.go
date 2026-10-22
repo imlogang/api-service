@@ -2,9 +2,11 @@ package httpapi
 
 import (
 	"errors"
+	"fmt"
 	"github.com/circleci/ex/o11y"
 	"github.com/gin-gonic/gin"
 	"github.com/imlogang/api-service/internal/db"
+	"github.com/imlogang/api-service/internal/games"
 	"net/http"
 )
 
@@ -33,6 +35,11 @@ type leaderboardResponse struct {
 
 type pokemonResponse struct {
 	Pokemon string `json:"pokemon"`
+}
+
+type roundResponse struct {
+	Game string `json:"game"`
+	games.Round
 }
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
@@ -185,4 +192,34 @@ func (a *API) IncrementScoreHandler(c *gin.Context) {
 	}
 	o11y.AddFieldToTrace(ctx, "score", score)
 	c.JSON(http.StatusOK, scoreResponse{Username: requestBody.User, Score: score})
+}
+
+// GetRoundHandler returns one round of the requested game: the answer, the
+// options to show (answer included) and an image.
+func (a *API) GetRoundHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	name := c.Query("game")
+
+	var err error
+	ctx, getRoundSpan := o11y.StartSpan(ctx, "GetRoundHandler")
+	defer o11y.End(getRoundSpan, &err)
+	o11y.AddFieldToTrace(ctx, "game", name)
+
+	if name == "" {
+		c.JSON(http.StatusBadRequest, returnBody{Error: "game required"})
+		return
+	}
+	game, ok := a.games[name]
+	if !ok {
+		c.JSON(http.StatusBadRequest, returnBody{Error: fmt.Sprintf("unknown game %q", name)})
+		return
+	}
+
+	round, err := game.Round(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
+		return
+	}
+	o11y.AddFieldToTrace(ctx, "answer", round.Answer)
+	c.JSON(http.StatusOK, roundResponse{Game: name, Round: round})
 }
