@@ -131,7 +131,7 @@ jobs:
                 name: run all tests
                 command: ./do run_tests_ci
       - store_test_results:
-          path: cmd/junit.xml
+          path: junit.xml
 
   lint:
     executor: lint

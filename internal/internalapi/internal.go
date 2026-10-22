@@ -6,17 +6,19 @@ import (
 	"github.com/circleci/ex/o11y"
 	"github.com/circleci/ex/o11y/wrappers/o11ygin"
 	"github.com/gin-gonic/gin"
+	"github.com/imlogang/api-service/internal/db"
 )
 
 type API struct {
 	Router *gin.Engine
+	store  *db.Store
 }
 
-func New(ctx context.Context) (*API, error) {
+func New(ctx context.Context, store *db.Store) (*API, error) {
 	r := ginrouter.Default(ctx, "internal")
 	r.Use(o11ygin.ClientCancelled())
 
-	a := &API{Router: r}
+	a := &API{Router: r, store: store}
 	o11y.Log(ctx, "New Internal router is called")
 	r.GET("/api/private/hello", a.HelloWorldHandler)
 	r.GET("/api/private/list_tables", a.ListTablesHandler)
