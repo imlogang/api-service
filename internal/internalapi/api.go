@@ -1,9 +1,11 @@
 package httpapi
 
 import (
+	"errors"
 	"fmt"
 	"github.com/circleci/ex/o11y"
 	"github.com/gin-gonic/gin"
+	"github.com/imlogang/api-service/internal/db"
 	"github.com/imlogang/api-service/internal/games"
 	"net/http"
 )
@@ -160,6 +162,10 @@ func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
 	}
 
 	sql, err := a.store.UpdateScoreForUser(requestBody.TableName, requestBody.User, requestBody.Score, requestBody.Column, ctx)
+	if errors.Is(err, db.ErrColumnNotUpdatable) {
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
+		return
+	}
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
@@ -191,7 +197,7 @@ func (a *API) GetPokemonHandler(c *gin.Context) {
 func (a *API) ReadAnswerFromDBHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	tableName := c.Query("tablename")
-	column := c.Query("colum")
+	column := c.Query("column")
 
 	ctx, answerFromTableSpan := o11y.StartSpan(ctx, "ReadAnswerFromDBHandler")
 	var err error
@@ -199,7 +205,7 @@ func (a *API) ReadAnswerFromDBHandler(c *gin.Context) {
 
 	if tableName == "" || column == "" {
 		o11y.AddFieldToTrace(ctx, "table-name", tableName)
-		o11y.AddFieldToTrace(ctx, "colum-name", column)
+		o11y.AddFieldToTrace(ctx, "column-name", column)
 		c.JSON(http.StatusBadRequest, returnBody{Error: "tablename or column required"})
 		return
 	}
