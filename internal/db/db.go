@@ -33,6 +33,18 @@ func (c *Config) connString() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", c.User, c.Password, c.Host, c.Port, c.DB)
 }
 
+// ErrColumnNotUpdatable is returned when a caller tries to update a column
+// other than the ones in updatableColumns.
+var ErrColumnNotUpdatable = errors.New("column cannot be updated")
+
+var updatableColumns = map[string]bool{"score": true}
+
+// ident quotes a table or column name so it can be safely placed in SQL.
+// Postgres can't take identifiers as $N parameters, so this is used instead.
+func ident(name string) string {
+	return pgx.Identifier{name}.Sanitize()
+}
+
 // Store holds a single connection pool that is shared by every request.
 type Store struct {
 	pool *pgxpool.Pool
@@ -104,7 +116,7 @@ func (s *Store) CreateTable(tableName string, ctx context.Context) (string, erro
 		return "", fmt.Errorf("the table name must not be empty")
 	}
 
-	sql := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (id SERIAL PRIMARY KEY, name TEXT);`, tableName)
+	sql := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (id SERIAL PRIMARY KEY, name TEXT);`, ident(tableName))
 	_, err := s.pool.Exec(ctx, sql)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
@@ -138,7 +150,7 @@ func (s *Store) DeleteTable(tableName string, ctx context.Context) (string, erro
 	if tableName == "" {
 		return "", fmt.Errorf("the table name must not be empty")
 	}
-	sql := fmt.Sprintf(`DROP TABLE %s`, tableName)
+	sql := fmt.Sprintf(`DROP TABLE %s`, ident(tableName))
 	_, err := s.pool.Exec(ctx, sql)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error creating the table:, %s`, err)
@@ -148,8 +160,8 @@ func (s *Store) DeleteTable(tableName string, ctx context.Context) (string, erro
 }
 
 func (s *Store) AddColumnsIfNotExists(tableName string, ctx context.Context) error {
-	sql_username := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "username" VARCHAR(255);`, tableName)
-	sql_score := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "score" INTEGER;`, tableName)
+	sql_username := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "username" VARCHAR(255);`, ident(tableName))
+	sql_score := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "score" INTEGER;`, ident(tableName))
 
 	_, err := s.pool.Exec(ctx, sql_username)
 	if err != nil {
@@ -169,8 +181,8 @@ func (s *Store) addColumnIfNotExistsAnswerTable(tableName string, column string,
 		return fmt.Errorf("tablename: %s, column: %s, or secondColumn: %s cannot be empty", tableName, column, secondColumn)
 	}
 
-	sql := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" VARCHAR(255);`, tableName, column)
-	sqlSecond := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" INTEGER`, tableName, secondColumn)
+	sql := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s VARCHAR(255);`, ident(tableName), ident(column))
+	sqlSecond := fmt.Sprintf(`ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s INTEGER`, ident(tableName), ident(secondColumn))
 
 	_, err := s.pool.Exec(context.Background(), sql)
 	if err != nil {
@@ -191,7 +203,7 @@ func (s *Store) AddUserIfNotExist(tableName string, username string, ctx context
 		return "", fmt.Errorf("tablename: %s, and username: %s, cannot be empty", tableName, username)
 	}
 
-	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE "username" = $1;`, tableName)
+	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE "username" = $1;`, ident(tableName))
 	var exists int
 	err := s.pool.QueryRow(ctx, sql, username).Scan(&exists)
 	if err != nil {
@@ -222,8 +234,8 @@ func (s *Store) UpdateTableWithUser(tableName string, username string, ctx conte
 	if username == "" {
 		return "", fmt.Errorf("the user must not be empty")
 	}
-	sql := fmt.Sprintf(`INSERT INTO %s ("username", "score") VALUES ('%s', 0)`, tableName, username)
-	_, err = s.pool.Exec(ctx, sql)
+	sql := fmt.Sprintf(`INSERT INTO %s ("username", "score") VALUES ($1, 0)`, ident(tableName))
+	_, err = s.pool.Exec(ctx, sql, username)
 	if err != nil {
 		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
 	}
@@ -235,7 +247,7 @@ func (s *Store) GetCurrentScore(tableName string, username string, ctx context.C
 	if tableName == "" || username == "" {
 		return 0, fmt.Errorf("table or username must not be empty. table: %s, username: %s", tableName, username)
 	}
-	sql := fmt.Sprintf(`SELECT "score" FROM "%s" WHERE "username" = $1;`, tableName)
+	sql := fmt.Sprintf(`SELECT "score" FROM %s WHERE "username" = $1;`, ident(tableName))
 	var score int
 	err := s.pool.QueryRow(ctx, sql, username).Scan(&score)
 	if err != nil {
@@ -255,8 +267,11 @@ func (s *Store) UpdateScoreForUser(tableName string, username string, score int,
 	if tableName == "" || username == "" || score == 0 || column == "" {
 		return "", fmt.Errorf("tablename: %s, username: %s, score: %d, or column: %s must not be empty", tableName, username, score, column)
 	}
-	sql := fmt.Sprintf(`UPDATE %s SET "%s" = %d WHERE "username" = '%s'`, tableName, column, score, username)
-	_, err := s.pool.Exec(ctx, sql)
+	if !updatableColumns[column] {
+		return "", fmt.Errorf("%w: %s", ErrColumnNotUpdatable, column)
+	}
+	sql := fmt.Sprintf(`UPDATE %s SET %s = $1 WHERE "username" = $2`, ident(tableName), ident(column))
+	_, err := s.pool.Exec(ctx, sql, score, username)
 	if err != nil {
 		return "", fmt.Errorf("there was an error updating the users score. %s", err)
 	}
@@ -278,7 +293,7 @@ func (s *Store) PutAnswerInDB(tablenName string, answer string, column string, s
 		return "", fmt.Errorf("there was an error adding your column: %s", column)
 	}
 
-	sql := fmt.Sprintf(`INSERT INTO %s ("id", "ANSWER", "POSITION") VALUES (1, $1, $2) ON CONFLICT ("id") DO UPDATE SET "ANSWER" = $1, "POSITION" = $2;`, tablenName)
+	sql := fmt.Sprintf(`INSERT INTO %s ("id", "ANSWER", "POSITION") VALUES (1, $1, $2) ON CONFLICT ("id") DO UPDATE SET "ANSWER" = $1, "POSITION" = $2;`, ident(tablenName))
 	_, err = s.pool.Exec(context.Background(), sql, answer, numberInArray)
 	if err != nil {
 		return "", fmt.Errorf("there was an error updating/creating the row: %s", err)
@@ -291,7 +306,7 @@ func (s *Store) ReadAnswerFromDB(tableName string, column string, ctx context.Co
 		return "", fmt.Errorf("tablename: %s or column: %s cannot be empty", tableName, column)
 	}
 
-	sql := fmt.Sprintf("SELECT '%s' FROM %s WHERE id = 1", column, tableName)
+	sql := fmt.Sprintf("SELECT %s::text FROM %s WHERE id = 1", ident(column), ident(tableName))
 	var answer string
 	err := s.pool.QueryRow(ctx, sql).Scan(&answer)
 	if err != nil {
@@ -305,7 +320,7 @@ func (s *Store) GetLeaderboard(tableName string, ctx context.Context) (string, e
 		return "", fmt.Errorf("tablename: %s", tableName)
 	}
 
-	sql := fmt.Sprintf(`SELECT "username", "score" FROM %s ORDER BY "score" DESC LIMIT 10;`, tableName)
+	sql := fmt.Sprintf(`SELECT "username", "score" FROM %s ORDER BY "score" DESC LIMIT 10;`, ident(tableName))
 	rows, err := s.pool.Query(ctx, sql)
 	if err != nil {
 		return "", fmt.Errorf("error executing query: %s", err)
