@@ -19,6 +19,7 @@ import (
 
 	"github.com/imlogang/api-service/internal/db"
 	"github.com/imlogang/api-service/internal/db/dbtest"
+	"github.com/imlogang/api-service/internal/games"
 )
 
 type fixture struct {
@@ -374,4 +375,57 @@ func TestAPI_IncrementScoreHandler_Concurrent(t *testing.T) {
 	wg.Wait()
 
 	assert.Equal(t, f.score(t, "racer"), n)
+}
+
+type stubGame struct {
+	round games.Round
+	err   error
+}
+
+func (s stubGame) Round(context.Context) (games.Round, error) { return s.round, s.err }
+
+func TestAPI_GetRoundHandler(t *testing.T) {
+	t.Parallel()
+	a, err := New(testcontext.Background(), nil)
+	assert.NilError(t, err)
+	round := games.Round{
+		Answer:  "meltan",
+		Options: []string{"pikachu", "meltan", "eevee", "mew"},
+		Image:   "https://example.com/808.png",
+	}
+	a.games = map[string]games.Game{
+		"pokemon": stubGame{round: round},
+		"broken":  stubGame{err: errors.New("pokeapi is down")},
+	}
+	f := &fixture{api: a}
+
+	t.Run("ok", func(t *testing.T) {
+		w := f.do(t, "GET", "/api/private/get_round?game=pokemon", nil)
+		assert.Equal(t, w.Code, 200)
+		assert.Check(t, cmp.DeepEqual(decodeInto[roundResponse](t, w), roundResponse{Game: "pokemon", Round: round}))
+	})
+
+	t.Run("fields are flat", func(t *testing.T) {
+		w := f.do(t, "GET", "/api/private/get_round?game=pokemon", nil)
+		assert.Equal(t, strings.TrimSpace(w.Body.String()),
+			`{"game":"pokemon","answer":"meltan","options":["pikachu","meltan","eevee","mew"],"image":"https://example.com/808.png"}`)
+	})
+
+	t.Run("missing game", func(t *testing.T) {
+		w := f.do(t, "GET", "/api/private/get_round", nil)
+		assert.Equal(t, w.Code, 400)
+		assert.Check(t, cmp.Equal(decode(t, w).Error, "game required"))
+	})
+
+	t.Run("unknown game", func(t *testing.T) {
+		w := f.do(t, "GET", "/api/private/get_round?game=tetris", nil)
+		assert.Equal(t, w.Code, 400)
+		assert.Check(t, cmp.Equal(decode(t, w).Error, `unknown game "tetris"`))
+	})
+
+	t.Run("game error", func(t *testing.T) {
+		w := f.do(t, "GET", "/api/private/get_round?game=broken", nil)
+		assert.Equal(t, w.Code, 500)
+		assert.Check(t, cmp.Contains(decode(t, w).Error, "pokeapi is down"))
+	})
 }
