@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/circleci/ex/o11y"
 	"github.com/gin-gonic/gin"
-	"github.com/imlogang/api-service/internal/db"
 	"github.com/imlogang/api-service/internal/games"
 	"net/http"
 )
@@ -36,7 +35,7 @@ func (a *API) HelloWorldHandler(c *gin.Context) {
 func (a *API) ListTablesHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	tables, err := db.ListTables(ctx)
+	tables, err := a.store.ListTables(ctx)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
@@ -58,7 +57,7 @@ func (a *API) CreateTableHandler(c *gin.Context) {
 		return
 	}
 
-	sql, err := db.CreateTable(requestBody.TableName, ctx)
+	sql, err := a.store.CreateTable(requestBody.TableName, ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
@@ -82,7 +81,7 @@ func (a *API) DeleteTableHandler(c *gin.Context) {
 		return
 	}
 
-	sql, err := db.DeleteTable(requestBody.TableName, ctx)
+	sql, err := a.store.DeleteTable(requestBody.TableName, ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
@@ -110,7 +109,7 @@ func (a *API) UpdateTableWithUserHandler(c *gin.Context) {
 		return
 	}
 
-	_, err = db.UpdateTableWithUser(requestBody.TableName, requestBody.User, ctx)
+	_, err = a.store.UpdateTableWithUser(requestBody.TableName, requestBody.User, ctx)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
@@ -136,7 +135,7 @@ func (a *API) GetScoreHandler(c *gin.Context) {
 		return
 	}
 
-	score, err := db.GetCurrentScore(tableName, username, ctx)
+	score, err := a.store.GetCurrentScore(tableName, username, ctx)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
@@ -160,7 +159,7 @@ func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
 		return
 	}
 
-	sql, err := db.UpdateScoreForUser(requestBody.TableName, requestBody.User, requestBody.Score, requestBody.Column, ctx)
+	sql, err := a.store.UpdateScoreForUser(requestBody.TableName, requestBody.User, requestBody.Score, requestBody.Column, ctx)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
@@ -204,7 +203,7 @@ func (a *API) ReadAnswerFromDBHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, returnBody{Error: "tablename or column required"})
 		return
 	}
-	answer, err := db.ReadAnswerFromDB(tableName, column, ctx)
+	answer, err := a.store.ReadAnswerFromDB(tableName, column, ctx)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
@@ -230,7 +229,7 @@ func (a *API) LeaderboardHandler(c *gin.Context) {
 		return
 	}
 
-	leaderboard, err := db.GetLeaderboard(tableName, ctx)
+	leaderboard, err := a.store.GetLeaderboard(tableName, ctx)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})

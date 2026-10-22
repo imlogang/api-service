@@ -5,12 +5,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/circleci/ex/testing/testcontext"
+	"github.com/imlogang/api-service/internal/db"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"testing"
 )
+
+var testStore *db.Store
+
+func TestMain(m *testing.M) {
+	store, err := db.New(testcontext.Background(), db.LoadConfig())
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	testStore = store
+	code := m.Run()
+	store.Close()
+	os.Exit(code)
+}
 
 func TestAPI_HelloWorldHandler(t *testing.T) {
 	ctx := testcontext.Background()
@@ -28,7 +44,7 @@ func TestAPI_HelloWorldHandler(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a, err := New(ctx)
+			a, err := New(ctx, testStore)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
 			u, err := url.Parse("http://localhost:8080/api/private/hello")
@@ -66,7 +82,7 @@ func TestAPI_CreateTable(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a, err := New(ctx)
+			a, err := New(ctx, testStore)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
 			u, err := url.Parse("http://localhost:8080/api/private/create_table")
@@ -100,7 +116,7 @@ func TestAPI_ListTables(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a, err := New(ctx)
+			a, err := New(ctx, testStore)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
 			u, err := url.Parse("http://localhost:8080/api/private/list_tables")
@@ -146,7 +162,7 @@ func TestAPI_UpdateTableWithUser(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a, err := New(ctx)
+			a, err := New(ctx, testStore)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
 			u, err := url.Parse("http://localhost:8080/api/private/update_table_with_user")
@@ -190,7 +206,7 @@ func TestAPI_GetCurrentScoreHandler(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a, err := New(ctx)
+			a, err := New(ctx, testStore)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
 			u, err := url.Parse("http://localhost:8080/api/private/get_current_score?username=test-user&tablename=pokemon_scores")
@@ -238,7 +254,7 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a, err := New(ctx)
+			a, err := New(ctx, testStore)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
 			u, err := url.Parse("http://localhost:8080/api/private/update_user_score")
@@ -272,7 +288,7 @@ func TestAPI_LeaderboardHandler(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a, err := New(ctx)
+			a, err := New(ctx, testStore)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
 			formatedURL := fmt.Sprintf("http://localhost:8080/api/private/leaderboard?tablename=%s", tt.tableName)

@@ -11,10 +11,9 @@ import (
 	"github.com/circleci/ex/httpserver"
 	"github.com/circleci/ex/httpserver/healthcheck"
 	"github.com/circleci/ex/termination"
+	"github.com/imlogang/api-service/cmd/setup"
 	"github.com/imlogang/api-service/internal/db"
 	"github.com/imlogang/api-service/internal/internalapi"
-	"github.com/imlogang/api-service/cmd/setup"
-	"github.com/jackc/pgx/v5"
 
 	"github.com/circleci/ex/o11y"
 	"github.com/circleci/ex/system"
@@ -49,15 +48,18 @@ func run(ctx context.Context, version, date string) (err error) {
 	}
 	defer o11yCleanup(ctx)
 
-	testDatabase(ctx)
-
 	ctx, runSpan := o11y.StartSpan(ctx, "main: run")
 	defer o11y.End(runSpan, &err)
 
 	sys := system.New()
 	defer sys.Cleanup(ctx)
 
-	err = loadInternal(ctx, cli, sys)
+	store, err := loadDatabase(ctx, sys)
+	if err != nil {
+		return err
+	}
+
+	err = loadInternal(ctx, cli, sys, store)
 	if err != nil {
 		return err
 	}
@@ -72,8 +74,8 @@ func run(ctx context.Context, version, date string) (err error) {
 	return sys.Run(ctx, 0)
 }
 
-func loadInternal(ctx context.Context, cli cli, sys *system.System) error {
-	a, err := httpapi.New(ctx)
+func loadInternal(ctx context.Context, cli cli, sys *system.System, store *db.Store) error {
+	a, err := httpapi.New(ctx, store)
 	if err != nil {
 		return err
 	}
@@ -92,55 +94,39 @@ func loadInternal(ctx context.Context, cli cli, sys *system.System) error {
 	return err
 }
 
-func testDatabase(ctx context.Context) {
+func loadDatabase(ctx context.Context, sys *system.System) (store *db.Store, err error) {
 	ctx, span := o11y.StartSpan(ctx, "Database Check")
-	defer span.End()
+	defer o11y.End(span, &err)
 
-	config := db.LoadConfig()
-	_, err := config.TestDBConnection(ctx)
+	store, err = db.New(ctx, db.LoadConfig())
 	if err != nil {
-		databaseError := fmt.Sprintf("database error: %s", err)
-		o11y.AddFieldToTrace(ctx, "db-check", databaseError)
+		o11y.AddFieldToTrace(ctx, "db-check", fmt.Sprintf("database error: %s", err))
 		o11y.AddFieldToTrace(ctx, "status", "unhealthy")
-		return
+		return nil, err
 	}
+	sys.AddHealthCheck(store)
+	sys.AddCleanup(func(ctx context.Context) error {
+		store.Close()
+		return nil
+	})
 
-	err = ensurePokemonScoresTable(ctx)
+	err = ensurePokemonScoresTable(ctx, store)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "status", "schema_error")
 		o11y.AddFieldToTrace(ctx, "error", err.Error())
-		return
+		return store, nil
 	}
 
 	o11y.AddFieldToTrace(ctx, "db-check", "healthy")
 	o11y.AddFieldToTrace(ctx, "status", "healthy")
+	return store, nil
 }
 
-func ensurePokemonScoresTable(ctx context.Context) (err error) {
-	config := db.LoadConfig()
-	DB, err := config.Connect(ctx)
-	if err != nil {
-		return err
-	}
-	defer func(DB *pgx.Conn) {
-		err := DB.Close(ctx)
-		if err != nil {
-			return
-		}
-	}(DB)
-
+func ensurePokemonScoresTable(ctx context.Context, store *db.Store) (err error) {
 	ctx, span := o11y.StartSpan(ctx, "db.ensure_pokemon_scores")
 	defer o11y.End(span, &err)
 
-	_, err = DB.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS pokemon_scores (
-			id SERIAL PRIMARY KEY
-		);
-
-		ALTER TABLE pokemon_scores
-			ADD COLUMN IF NOT EXISTS username TEXT UNIQUE,
-			ADD COLUMN IF NOT EXISTS score INTEGER NOT NULL DEFAULT 0;
-	`)
+	err = store.EnsurePokemonScoresTable(ctx)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "table", "pokemon_scores")
 		o11y.AddFieldToTrace(ctx, "error", err.Error())
