@@ -87,6 +87,20 @@ func scoreURL(table, username string) string {
 	return "/api/private/get_current_score?" + url.Values{"tablename": {table}, "username": {username}}.Encode()
 }
 
+func (f *fixture) score(t *testing.T, username string) int {
+	t.Helper()
+	w := f.do(t, "GET", scoreURL("pokemon_scores", username), nil)
+	assert.Equal(t, w.Code, 200)
+	return decodeInto[scoreResponse](t, w).Score
+}
+
+func (f *fixture) leaderboard(t *testing.T) []db.LeaderboardEntry {
+	t.Helper()
+	w := f.do(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", nil)
+	assert.Equal(t, w.Code, 200)
+	return decodeInto[leaderboardResponse](t, w).Leaderboard
+}
+
 func TestAPI_HelloWorldHandler(t *testing.T) {
 	t.Parallel()
 	a, err := New(testcontext.Background(), nil)
@@ -112,8 +126,7 @@ func TestAPI_UpdateTableWithUser(t *testing.T) {
 			assert.Equal(t, w.Code, 200)
 			assert.Check(t, cmp.DeepEqual(decode(t, w), returnBody{AddedUser: user}))
 
-			w = f.do(t, "GET", scoreURL("pokemon_scores", user), nil)
-			assert.Equal(t, w.Body.String(), fmt.Sprintf("Score for %s: 0\n", user))
+			assert.Equal(t, f.score(t, user), 0)
 		})
 	}
 }
@@ -126,13 +139,22 @@ func TestAPI_GetCurrentScoreHandler(t *testing.T) {
 	t.Run("existing user", func(t *testing.T) {
 		w := f.do(t, "GET", scoreURL("pokemon_scores", "test-user"), nil)
 		assert.Equal(t, w.Code, 200)
-		assert.Equal(t, w.Body.String(), "Score for test-user: 3\n")
+		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "test-user", Score: 3}))
 	})
+
+	// node-fetch, which the bot uses, sends */* unless told otherwise.
+	for _, accept := range []string{"*/*", "text/plain", "application/json"} {
+		t.Run("json for Accept "+accept, func(t *testing.T) {
+			w := f.doAccept(t, "GET", scoreURL("pokemon_scores", "test-user"), accept, nil)
+			assert.Equal(t, w.Code, 200)
+			assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "test-user", Score: 3}))
+		})
+	}
 
 	t.Run("unknown user is created with a score of 0", func(t *testing.T) {
 		w := f.do(t, "GET", scoreURL("pokemon_scores", "new-user"), nil)
 		assert.Equal(t, w.Code, 200)
-		assert.Equal(t, w.Body.String(), "Score for new-user: 0\n")
+		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "new-user", Score: 0}))
 
 		var count int
 		err := f.db.AdminDB.GetContext(testcontext.Background(), &count,
@@ -170,10 +192,8 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 			UpdateAnswer: "the score for the user has been updated",
 		}))
 
-		w = f.do(t, "GET", scoreURL("pokemon_scores", "test-user"), nil)
-		assert.Equal(t, w.Body.String(), "Score for test-user: 5\n")
-		w = f.do(t, "GET", scoreURL("pokemon_scores", "test-user-2"), nil)
-		assert.Equal(t, w.Body.String(), "Score for test-user-2: 0\n")
+		assert.Equal(t, f.score(t, "test-user"), 5)
+		assert.Equal(t, f.score(t, "test-user-2"), 0)
 	})
 
 	t.Run("username is not SQL", func(t *testing.T) {
@@ -185,8 +205,7 @@ func TestAPI_UpdateScoreForUserHandler(t *testing.T) {
 		})
 		assert.Equal(t, w.Code, 200)
 
-		w = f.do(t, "GET", scoreURL("pokemon_scores", "test-user-2"), nil)
-		assert.Equal(t, w.Body.String(), "Score for test-user-2: 0\n")
+		assert.Equal(t, f.score(t, "test-user-2"), 0)
 	})
 
 	for _, column := range []string{"id", "username", `score" = 0, "username`} {
@@ -210,10 +229,11 @@ func TestAPI_LeaderboardHandler(t *testing.T) {
 	f.addUser(t, "gold", 9)
 	f.addUser(t, "silver", 4)
 
-	w := f.do(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", nil)
-	assert.Equal(t, w.Code, 200)
-	assert.Equal(t, w.Body.String(),
-		"\nUsername: gold, Score: 9\nUsername: silver, Score: 4\nUsername: bronze, Score: 1\n")
+	assert.Check(t, cmp.DeepEqual(f.leaderboard(t), []db.LeaderboardEntry{
+		{Username: "gold", Score: 9},
+		{Username: "silver", Score: 4},
+		{Username: "bronze", Score: 1},
+	}))
 }
 
 func TestAPI_LeaderboardHandler_TopTenOnly(t *testing.T) {
@@ -223,21 +243,20 @@ func TestAPI_LeaderboardHandler_TopTenOnly(t *testing.T) {
 		f.addUser(t, fmt.Sprintf("user-%02d", i), i)
 	}
 
-	w := f.do(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", nil)
-	assert.Equal(t, w.Code, 200)
-	lines := strings.Split(strings.TrimSpace(w.Body.String()), "\n")
-	assert.Equal(t, len(lines), 10)
-	assert.Equal(t, lines[0], "Username: user-12, Score: 12")
-	assert.Equal(t, lines[9], "Username: user-03, Score: 3")
+	leaderboard := f.leaderboard(t)
+	assert.Equal(t, len(leaderboard), 10)
+	assert.Equal(t, leaderboard[0], db.LeaderboardEntry{Username: "user-12", Score: 12})
+	assert.Equal(t, leaderboard[9], db.LeaderboardEntry{Username: "user-03", Score: 3})
 }
 
 func TestAPI_LeaderboardHandler_Empty(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
 
+	// An empty list, not null, so the bot can tell "nobody yet" from a bad response.
 	w := f.do(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", nil)
 	assert.Equal(t, w.Code, 200)
-	assert.Equal(t, w.Body.String(), "\nNo leaderboard data found.")
+	assert.Equal(t, strings.TrimSpace(w.Body.String()), `{"leaderboard":[]}`)
 
 	w = f.do(t, "GET", "/api/private/leaderboard", nil)
 	assert.Equal(t, w.Code, 400)
@@ -255,9 +274,7 @@ func TestAPI_TableNameIsNotSQL(t *testing.T) {
 	w = f.do(t, "GET", scoreURL(evil, "test-user"), nil)
 	assert.Equal(t, w.Code, 500)
 
-	w = f.do(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", nil)
-	assert.Equal(t, w.Code, 200)
-	assert.Equal(t, w.Body.String(), "\nUsername: test-user, Score: 4\n")
+	assert.Check(t, cmp.DeepEqual(f.leaderboard(t), []db.LeaderboardEntry{{Username: "test-user", Score: 4}}))
 }
 
 func TestAPI_RemovedTableEndpoints(t *testing.T) {
@@ -280,64 +297,6 @@ func TestAPI_RemovedTableEndpoints(t *testing.T) {
 	}
 }
 
-func TestAPI_GetCurrentScoreHandler_JSON(t *testing.T) {
-	t.Parallel()
-	f := newFixture(t)
-	f.addUser(t, "test-user", 3)
-
-	t.Run("existing user", func(t *testing.T) {
-		w := f.doAccept(t, "GET", scoreURL("pokemon_scores", "test-user"), "application/json", nil)
-		assert.Equal(t, w.Code, 200)
-		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "test-user", Score: 3}))
-	})
-
-	t.Run("unknown user", func(t *testing.T) {
-		w := f.doAccept(t, "GET", scoreURL("pokemon_scores", "new-user"), "application/json", nil)
-		assert.Equal(t, w.Code, 200)
-		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "new-user", Score: 0}))
-	})
-
-	// node-fetch, which the bot uses, sends */* by default.
-	for _, accept := range []string{"", "*/*", "text/plain"} {
-		t.Run("text for Accept "+accept, func(t *testing.T) {
-			w := f.doAccept(t, "GET", scoreURL("pokemon_scores", "test-user"), accept, nil)
-			assert.Equal(t, w.Code, 200)
-			assert.Equal(t, w.Body.String(), "Score for test-user: 3\n")
-		})
-	}
-}
-
-func TestAPI_LeaderboardHandler_JSON(t *testing.T) {
-	t.Parallel()
-	f := newFixture(t)
-	f.addUser(t, "bronze", 1)
-	f.addUser(t, "gold", 9)
-	f.addUser(t, "silver", 4)
-
-	w := f.doAccept(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", "application/json", nil)
-	assert.Equal(t, w.Code, 200)
-	assert.Check(t, cmp.DeepEqual(decodeInto[leaderboardResponse](t, w), leaderboardResponse{
-		Leaderboard: []db.LeaderboardEntry{
-			{Username: "gold", Score: 9},
-			{Username: "silver", Score: 4},
-			{Username: "bronze", Score: 1},
-		},
-	}))
-
-	w = f.doAccept(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", "*/*", nil)
-	assert.Equal(t, w.Body.String(),
-		"\nUsername: gold, Score: 9\nUsername: silver, Score: 4\nUsername: bronze, Score: 1\n")
-}
-
-func TestAPI_LeaderboardHandler_JSONEmpty(t *testing.T) {
-	t.Parallel()
-	f := newFixture(t)
-
-	w := f.doAccept(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", "application/json", nil)
-	assert.Equal(t, w.Code, 200)
-	assert.Equal(t, strings.TrimSpace(w.Body.String()), `{"leaderboard":[]}`)
-}
-
 func TestAPI_GetPokemonHandler(t *testing.T) {
 	t.Parallel()
 	a, err := New(testcontext.Background(), nil)
@@ -345,21 +304,15 @@ func TestAPI_GetPokemonHandler(t *testing.T) {
 	a.getPokemon = func(context.Context) (string, error) { return "meltan", nil }
 	f := &fixture{api: a}
 
-	t.Run("text keeps its trailing newline", func(t *testing.T) {
+	t.Run("ok", func(t *testing.T) {
 		w := f.do(t, "GET", "/api/private/get_pokemon", nil)
-		assert.Equal(t, w.Code, 200)
-		assert.Equal(t, w.Body.String(), "meltan\n")
-	})
-
-	t.Run("json", func(t *testing.T) {
-		w := f.doAccept(t, "GET", "/api/private/get_pokemon", "application/json", nil)
 		assert.Equal(t, w.Code, 200)
 		assert.Check(t, cmp.DeepEqual(decodeInto[pokemonResponse](t, w), pokemonResponse{Pokemon: "meltan"}))
 	})
 
 	t.Run("pokeapi error", func(t *testing.T) {
 		a.getPokemon = func(context.Context) (string, error) { return "", errors.New("pokeapi is down") }
-		w := f.doAccept(t, "GET", "/api/private/get_pokemon", "application/json", nil)
+		w := f.do(t, "GET", "/api/private/get_pokemon", nil)
 		assert.Equal(t, w.Code, 500)
 		assert.Check(t, cmp.Contains(decode(t, w).Error, "pokeapi is down"))
 	})
@@ -388,8 +341,7 @@ func TestAPI_IncrementScoreHandler(t *testing.T) {
 	})
 
 	t.Run("other users are untouched", func(t *testing.T) {
-		w := f.do(t, "GET", scoreURL("pokemon_scores", "bystander"), nil)
-		assert.Equal(t, w.Body.String(), "Score for bystander: 2\n")
+		assert.Equal(t, f.score(t, "bystander"), 2)
 	})
 
 	t.Run("missing username", func(t *testing.T) {
@@ -421,6 +373,5 @@ func TestAPI_IncrementScoreHandler_Concurrent(t *testing.T) {
 	}
 	wg.Wait()
 
-	w := f.do(t, "GET", scoreURL("pokemon_scores", "racer"), nil)
-	assert.Equal(t, w.Body.String(), fmt.Sprintf("Score for racer: %d\n", n))
+	assert.Equal(t, f.score(t, "racer"), n)
 }
