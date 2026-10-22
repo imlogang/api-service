@@ -13,8 +13,9 @@ import (
 type requestBody struct {
 	TableName string `json:"table_name"`
 	User      string `json:"username"`
-	Score     int    `json:"score"`
-	Column    string `json:"column"`
+	// Score is a pointer so that leaving it out is an error, not a reset to 0.
+	Score  *int   `json:"score"`
+	Column string `json:"column"`
 }
 
 type returnBody struct {
@@ -80,9 +81,18 @@ func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
 		return
 	}
 
-	sql, err := a.store.UpdateScoreForUser(requestBody.TableName, requestBody.User, requestBody.Score, requestBody.Column, ctx)
-	if errors.Is(err, db.ErrColumnNotUpdatable) {
+	if requestBody.Score == nil {
+		c.JSON(http.StatusBadRequest, returnBody{Error: "score required"})
+		return
+	}
+
+	sql, err := a.store.UpdateScoreForUser(requestBody.TableName, requestBody.User, *requestBody.Score, requestBody.Column, ctx)
+	if errors.Is(err, db.ErrColumnNotUpdatable) || errors.Is(err, db.ErrNegativeScore) {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
+		return
+	}
+	if errors.Is(err, db.ErrUserNotFound) {
+		c.JSON(http.StatusNotFound, returnBody{Error: err.Error()})
 		return
 	}
 	if err != nil {

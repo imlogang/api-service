@@ -124,3 +124,36 @@ func TestPokemon_TooFewSpecies(t *testing.T) {
 	_, err := p.Round(testcontext.Background())
 	assert.Check(t, cmp.ErrorContains(err, "need at least 4 species"))
 }
+
+func TestPokemon_BadSpeciesList(t *testing.T) {
+	for name, tc := range map[string]struct {
+		body    string
+		wantErr string
+	}{
+		"not json":       {body: "<html>rate limited</html>", wantErr: "decoding PokeAPI species list"},
+		"truncated json": {body: `{"results":[{"name":"bulbasaur"`, wantErr: "decoding PokeAPI species list"},
+		"url without an id": {
+			body:    `{"results":[{"name":"bulbasaur","url":"https://pokeapi.co/api/v2/pokemon-species/bulbasaur/"}]}`,
+			wantErr: `unexpected species URL "https://pokeapi.co/api/v2/pokemon-species/bulbasaur/"`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			t.Cleanup(srv.Close)
+
+			_, err := NewPokemon(srv.URL).Round(testcontext.Background())
+			assert.Check(t, cmp.ErrorContains(err, tc.wantErr))
+		})
+	}
+}
+
+func TestPokemon_Unreachable(t *testing.T) {
+	srv := httptest.NewServer(http.NotFoundHandler())
+	url := srv.URL
+	srv.Close()
+
+	_, err := NewPokemon(url).Round(testcontext.Background())
+	assert.Check(t, cmp.ErrorContains(err, "there was an error getting a Pokemon"))
+}

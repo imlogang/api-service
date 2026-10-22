@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 
 	"github.com/jackc/pgx/v5"
@@ -29,13 +31,27 @@ func LoadConfig() Config {
 	}
 }
 
+// connString builds the URL by parts so that characters like @, / or : in
+// the password or database name are escaped rather than read as separators.
 func (c *Config) connString() string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", c.User, c.Password, c.Host, c.Port, c.DB)
+	u := url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(c.User, c.Password),
+		Host:   net.JoinHostPort(c.Host, c.Port),
+		Path:   "/" + c.DB,
+	}
+	return u.String()
 }
 
 // ErrColumnNotUpdatable is returned when a caller tries to update a column
 // other than the ones in updatableColumns.
 var ErrColumnNotUpdatable = errors.New("column cannot be updated")
+
+// ErrUserNotFound is returned when updating a user that isn't in the table.
+var ErrUserNotFound = errors.New("user not found")
+
+// ErrNegativeScore is returned when setting a score below zero.
+var ErrNegativeScore = errors.New("score must not be negative")
 
 var updatableColumns = map[string]bool{"score": true}
 
@@ -80,46 +96,6 @@ func (s *Store) HealthChecks() (name string, ready, live func(ctx context.Contex
 	return "postgres", s.pool.Ping, nil
 }
 
-func (s *Store) AddUserIfNotExist(tableName string, username string, ctx context.Context) (string, error) {
-	if tableName == "" || username == "" {
-		return "", fmt.Errorf("tablename: %s, and username: %s, cannot be empty", tableName, username)
-	}
-
-	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE "username" = $1;`, ident(tableName))
-	var exists int
-	err := s.pool.QueryRow(ctx, sql, username).Scan(&exists)
-	if err != nil {
-		return "", fmt.Errorf("there was an error querying the database, %s", err)
-	}
-
-	if exists > 0 {
-		return "the user exists", nil
-	} else {
-		response, err := s.UpdateTableWithUser(tableName, username, ctx)
-		if err != nil {
-			return "", fmt.Errorf("there was an error creating the user in the database, %s", err)
-		}
-		return response, nil
-	}
-
-}
-
-func (s *Store) UpdateTableWithUser(tableName string, username string, ctx context.Context) (string, error) {
-	if tableName == "" {
-		return "", fmt.Errorf("the table name must not be empty")
-	}
-	if username == "" {
-		return "", fmt.Errorf("the user must not be empty")
-	}
-	sql := fmt.Sprintf(`INSERT INTO %s ("username", "score") VALUES ($1, 0)`, ident(tableName))
-	_, err := s.pool.Exec(ctx, sql, username)
-	if err != nil {
-		return "", fmt.Errorf(`there was an error updating the table: %s`, err)
-	}
-
-	return fmt.Sprintf("The table %s was updated", tableName), nil
-}
-
 func (s *Store) GetCurrentScore(tableName string, username string, ctx context.Context) (int, error) {
 	if tableName == "" || username == "" {
 		return 0, fmt.Errorf("table or username must not be empty. table: %s, username: %s", tableName, username)
@@ -129,7 +105,7 @@ func (s *Store) GetCurrentScore(tableName string, username string, ctx context.C
 	err := s.pool.QueryRow(ctx, sql, username).Scan(&score)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			_, err := s.AddUserIfNotExist(tableName, username, ctx)
+			err := s.createUser(ctx, tableName, username)
 			if err != nil {
 				return 0, fmt.Errorf("there was an error creating your user, %s", err)
 			}
@@ -140,17 +116,33 @@ func (s *Store) GetCurrentScore(tableName string, username string, ctx context.C
 	return score, nil
 }
 
+// createUser adds the user with a score of 0. It does nothing if the user
+// already exists, so two requests creating the same new user can't collide.
+func (s *Store) createUser(ctx context.Context, tableName string, username string) error {
+	sql := fmt.Sprintf(`INSERT INTO %s ("username", "score") VALUES ($1, 0)
+		ON CONFLICT ("username") DO NOTHING`, ident(tableName))
+	_, err := s.pool.Exec(ctx, sql, username)
+	return err
+}
+
+// UpdateScoreForUser sets a user's score, for example to correct or reset it.
 func (s *Store) UpdateScoreForUser(tableName string, username string, score int, column string, ctx context.Context) (string, error) {
-	if tableName == "" || username == "" || score == 0 || column == "" {
-		return "", fmt.Errorf("tablename: %s, username: %s, score: %d, or column: %s must not be empty", tableName, username, score, column)
+	if tableName == "" || username == "" || column == "" {
+		return "", fmt.Errorf("tablename: %s, username: %s, or column: %s must not be empty", tableName, username, column)
 	}
 	if !updatableColumns[column] {
 		return "", fmt.Errorf("%w: %s", ErrColumnNotUpdatable, column)
 	}
+	if score < 0 {
+		return "", fmt.Errorf("%w: %d", ErrNegativeScore, score)
+	}
 	sql := fmt.Sprintf(`UPDATE %s SET %s = $1 WHERE "username" = $2`, ident(tableName), ident(column))
-	_, err := s.pool.Exec(ctx, sql, score, username)
+	tag, err := s.pool.Exec(ctx, sql, score, username)
 	if err != nil {
 		return "", fmt.Errorf("there was an error updating the users score. %s", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return "", fmt.Errorf("%w: %s", ErrUserNotFound, username)
 	}
 
 	return "the score for the user has been updated", nil
@@ -178,13 +170,14 @@ type LeaderboardEntry struct {
 	Score    int    `json:"score"`
 }
 
-// GetLeaderboard returns the top 10 users by score, highest first.
+// GetLeaderboard returns the top 10 users by score, highest first. Equal
+// scores are ordered by username so the list and the cutoff are stable.
 func (s *Store) GetLeaderboard(tableName string, ctx context.Context) ([]LeaderboardEntry, error) {
 	if tableName == "" {
 		return nil, fmt.Errorf("tablename: %s", tableName)
 	}
 
-	sql := fmt.Sprintf(`SELECT "username", "score" FROM %s ORDER BY "score" DESC LIMIT 10;`, ident(tableName))
+	sql := fmt.Sprintf(`SELECT "username", "score" FROM %s ORDER BY "score" DESC, "username" LIMIT 10;`, ident(tableName))
 	rows, err := s.pool.Query(ctx, sql)
 	if err != nil {
 		return nil, fmt.Errorf("error executing query: %s", err)

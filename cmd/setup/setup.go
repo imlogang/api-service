@@ -99,9 +99,14 @@ func stringField(fields map[string]any, key string) (val string) {
 	return val
 }
 
+// intField reads an integer field. OpenTelemetry hands the sampler integer
+// attributes as int64, so that has to be accepted as well as int.
 func intField(fields map[string]any, key string) (val int) {
-	if n, ok := fields[key]; ok {
-		val, _ = n.(int)
+	switch n := fields[key].(type) {
+	case int:
+		return n
+	case int64:
+		return int(n)
 	}
-	return val
+	return 0
 }
