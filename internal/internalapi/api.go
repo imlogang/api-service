@@ -6,8 +6,8 @@ import (
 	"github.com/circleci/ex/o11y"
 	"github.com/gin-gonic/gin"
 	"github.com/imlogang/api-service/internal/db"
-	"github.com/imlogang/api-service/internal/games"
 	"net/http"
+	"strings"
 )
 
 type requestBody struct {
@@ -22,6 +22,26 @@ type returnBody struct {
 	UpdateAnswer string `json:"update_answer,omitempty"`
 	Error        string `json:"error,omitempty"`
 	AddedUser    string `json:"added_user,omitempty"`
+}
+
+type scoreResponse struct {
+	Username string `json:"username"`
+	Score    int    `json:"score"`
+}
+
+type leaderboardResponse struct {
+	Leaderboard []db.LeaderboardEntry `json:"leaderboard"`
+}
+
+type pokemonResponse struct {
+	Pokemon string `json:"pokemon"`
+}
+
+// wantsJSON reports whether the caller sent "Accept: application/json".
+// Anything else, including no Accept header or */*, gets the original
+// plain-text responses so existing callers keep working.
+func wantsJSON(c *gin.Context) bool {
+	return c.NegotiateFormat(gin.MIMEPlain, gin.MIMEJSON) == gin.MIMEJSON
 }
 
 func (a *API) HelloWorldHandler(c *gin.Context) {
@@ -74,6 +94,10 @@ func (a *API) GetScoreHandler(c *gin.Context) {
 		return
 	}
 
+	if wantsJSON(c) {
+		c.JSON(http.StatusOK, scoreResponse{Username: username, Score: score})
+		return
+	}
 	c.Header("Content-Type", "text/plain")
 	c.String(http.StatusOK, "Score for %s: %d\n", username, score)
 }
@@ -112,7 +136,7 @@ func (a *API) GetPokemonHandler(c *gin.Context) {
 	ctx, getPokemonHandlerSpan := o11y.StartSpan(ctx, "GetPokemonHandler")
 	defer o11y.End(getPokemonHandlerSpan, &err)
 
-	pokemon, err := games.GetPokemon(ctx)
+	pokemon, err := a.getPokemon(ctx)
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
@@ -120,6 +144,10 @@ func (a *API) GetPokemonHandler(c *gin.Context) {
 	}
 
 	o11y.AddFieldToTrace(ctx, "pokemon", pokemon)
+	if wantsJSON(c) {
+		c.JSON(http.StatusOK, pokemonResponse{Pokemon: pokemon})
+		return
+	}
 	c.Header("Content-Type", "text/plain")
 	c.String(http.StatusOK, fmt.Sprintf("%s\n", pokemon))
 }
@@ -144,6 +172,53 @@ func (a *API) LeaderboardHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
 		return
 	}
+	if wantsJSON(c) {
+		if leaderboard == nil {
+			leaderboard = []db.LeaderboardEntry{}
+		}
+		c.JSON(http.StatusOK, leaderboardResponse{Leaderboard: leaderboard})
+		return
+	}
 	c.Header("Content-Type", "text/plain")
-	c.String(http.StatusOK, fmt.Sprintf("\n%s", leaderboard))
+	c.String(http.StatusOK, leaderboardText(leaderboard))
+}
+
+func leaderboardText(leaderboard []db.LeaderboardEntry) string {
+	if len(leaderboard) == 0 {
+		return "\nNo leaderboard data found."
+	}
+	var b strings.Builder
+	b.WriteString("\n")
+	for _, entry := range leaderboard {
+		fmt.Fprintf(&b, "Username: %s, Score: %d\n", entry.Username, entry.Score)
+	}
+	return b.String()
+}
+
+// IncrementScoreHandler adds one point to a user's score atomically and
+// returns the new score. It only speaks JSON.
+func (a *API) IncrementScoreHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	var requestBody requestBody
+	err := c.BindJSON(&requestBody)
+	ctx, incrementScoreSpan := o11y.StartSpan(ctx, "IncrementScoreHandler")
+	defer o11y.End(incrementScoreSpan, &err)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
+		return
+	}
+	if requestBody.TableName == "" || requestBody.User == "" {
+		c.JSON(http.StatusBadRequest, returnBody{Error: "table_name and username required"})
+		return
+	}
+
+	score, err := a.store.IncrementScore(ctx, requestBody.TableName, requestBody.User)
+	if err != nil {
+		o11y.AddFieldToTrace(ctx, "db-error", err)
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
+		return
+	}
+	o11y.AddFieldToTrace(ctx, "score", score)
+	c.JSON(http.StatusOK, scoreResponse{Username: requestBody.User, Score: score})
 }
