@@ -200,7 +200,7 @@ func TestAPI_GetCurrentScoreHandler(t *testing.T) {
 			username:     "test-user-2",
 			score:        0,
 			tableName:    "pokemon_scores",
-			expectedResp: "Score for test-user: 0\n",
+			expectedResp: "Score for test-user-2: 0\n",
 		},
 	}
 	for _, tt := range tests {
@@ -209,7 +209,8 @@ func TestAPI_GetCurrentScoreHandler(t *testing.T) {
 			a, err := New(ctx, testStore)
 			assert.NilError(t, err)
 			w := httptest.NewRecorder()
-			u, err := url.Parse("http://localhost:8080/api/private/get_current_score?username=test-user&tablename=pokemon_scores")
+			formatedURL := fmt.Sprintf("http://localhost:8080/api/private/get_current_score?username=%s&tablename=%s", tt.username, tt.tableName)
+			u, err := url.Parse(formatedURL)
 			assert.NilError(t, err)
 			req := httptest.NewRequest("GET", u.String(), nil)
 			a.Router.ServeHTTP(w, req)
