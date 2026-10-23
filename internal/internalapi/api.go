@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/circleci/ex/o11y"
@@ -27,6 +28,10 @@ type returnBody struct {
 type scoreResponse struct {
 	Username string `json:"username"`
 	Score    int    `json:"score"`
+	// Rank and Players are left out if the rank lookup fails, so the score,
+	// which has already been read or changed, still comes back.
+	Rank    int `json:"rank,omitempty"`
+	Players int `json:"players,omitempty"`
 }
 
 type leaderboardResponse struct {
@@ -65,7 +70,19 @@ func (a *API) GetScoreHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, scoreResponse{Username: username, Score: score})
+	c.JSON(http.StatusOK, a.withStanding(ctx, tableName, scoreResponse{Username: username, Score: score}))
+}
+
+// withStanding adds the user's rank to resp. A failed lookup is recorded on
+// the trace and leaves the rank out rather than failing the request.
+func (a *API) withStanding(ctx context.Context, tableName string, resp scoreResponse) scoreResponse {
+	st, err := a.store.GetStanding(ctx, tableName, resp.Username)
+	if err != nil {
+		o11y.AddFieldToTrace(ctx, "standing-error", err)
+		return resp
+	}
+	resp.Rank, resp.Players = st.Rank, st.Players
+	return resp
 }
 
 func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
@@ -155,7 +172,7 @@ func (a *API) IncrementScoreHandler(c *gin.Context) {
 		return
 	}
 	o11y.AddFieldToTrace(ctx, "score", score)
-	c.JSON(http.StatusOK, scoreResponse{Username: requestBody.User, Score: score})
+	c.JSON(http.StatusOK, a.withStanding(ctx, requestBody.TableName, scoreResponse{Username: requestBody.User, Score: score}))
 }
 
 // GetRoundHandler returns one round of the requested game: the answer, the
