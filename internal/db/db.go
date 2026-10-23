@@ -165,6 +165,38 @@ func (s *Store) IncrementScore(ctx context.Context, tableName string, username s
 	return score, nil
 }
 
+// Standing is where a user places in a table.
+type Standing struct {
+	// Rank is 1 for the top score. Equal scores share a rank, and the next
+	// rank skips ahead: 9, 9, 7 ranks as 1, 1, 3.
+	Rank int
+	// Players is how many users the table has, including those on 0.
+	Players int
+}
+
+// GetStanding returns the user's rank in the table and how many players it has.
+func (s *Store) GetStanding(ctx context.Context, tableName string, username string) (Standing, error) {
+	if tableName == "" || username == "" {
+		return Standing{}, fmt.Errorf("tablename: %s and username: %s must not be empty", tableName, username)
+	}
+	sql := fmt.Sprintf(`SELECT "rank", "players" FROM (
+			SELECT "username",
+				RANK() OVER (ORDER BY "score" DESC) AS "rank",
+				COUNT(*) OVER () AS "players"
+			FROM %s
+		) AS ranked
+		WHERE "username" = $1`, ident(tableName))
+	var st Standing
+	err := s.pool.QueryRow(ctx, sql, username).Scan(&st.Rank, &st.Players)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Standing{}, fmt.Errorf("%w: %s", ErrUserNotFound, username)
+	}
+	if err != nil {
+		return Standing{}, fmt.Errorf("there was an error finding the users rank. %s", err)
+	}
+	return st, nil
+}
+
 type LeaderboardEntry struct {
 	Username string `json:"username"`
 	Score    int    `json:"score"`

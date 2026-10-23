@@ -158,6 +158,28 @@ func TestAPI_GetCurrentScoreHandler_ConcurrentNewUser(t *testing.T) {
 	assert.Equal(t, count, 1)
 }
 
+// Equal scores share a rank and the next rank skips ahead; players on 0
+// count too.
+func TestAPI_GetCurrentScoreHandler_Rank(t *testing.T) {
+	t.Parallel()
+	f := newFixture(t)
+	f.addUser(t, "ash", 9)
+	f.addUser(t, "misty", 9)
+	f.addUser(t, "brock", 7)
+	f.addUser(t, "gary", 0)
+
+	for user, want := range map[string]scoreResponse{
+		"ash":   {Username: "ash", Score: 9, Rank: 1, Players: 4},
+		"misty": {Username: "misty", Score: 9, Rank: 1, Players: 4},
+		"brock": {Username: "brock", Score: 7, Rank: 3, Players: 4},
+		"gary":  {Username: "gary", Score: 0, Rank: 4, Players: 4},
+	} {
+		w := f.do(t, "GET", scoreURL("pokemon_scores", user), nil)
+		assert.Equal(t, w.Code, 200)
+		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), want))
+	}
+}
+
 func TestAPI_GetCurrentScoreHandler(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
@@ -166,7 +188,7 @@ func TestAPI_GetCurrentScoreHandler(t *testing.T) {
 	t.Run("existing user", func(t *testing.T) {
 		w := f.do(t, "GET", scoreURL("pokemon_scores", "test-user"), nil)
 		assert.Equal(t, w.Code, 200)
-		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "test-user", Score: 3}))
+		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "test-user", Score: 3, Rank: 1, Players: 1}))
 	})
 
 	// node-fetch, which the bot uses, sends */* unless told otherwise.
@@ -174,14 +196,14 @@ func TestAPI_GetCurrentScoreHandler(t *testing.T) {
 		t.Run("json for Accept "+accept, func(t *testing.T) {
 			w := f.doAccept(t, "GET", scoreURL("pokemon_scores", "test-user"), accept, nil)
 			assert.Equal(t, w.Code, 200)
-			assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "test-user", Score: 3}))
+			assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "test-user", Score: 3, Rank: 1, Players: 1}))
 		})
 	}
 
 	t.Run("unknown user is created with a score of 0", func(t *testing.T) {
 		w := f.do(t, "GET", scoreURL("pokemon_scores", "new-user"), nil)
 		assert.Equal(t, w.Code, 200)
-		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "new-user", Score: 0}))
+		assert.Check(t, cmp.DeepEqual(decodeInto[scoreResponse](t, w), scoreResponse{Username: "new-user", Score: 0, Rank: 2, Players: 2}))
 
 		var count int
 		err := f.db.AdminDB.GetContext(testcontext.Background(), &count,
@@ -376,12 +398,13 @@ func TestAPI_IncrementScoreHandler(t *testing.T) {
 	}
 
 	t.Run("existing user", func(t *testing.T) {
-		assert.Check(t, cmp.DeepEqual(increment(t, "test-user"), scoreResponse{Username: "test-user", Score: 6}))
+		assert.Check(t, cmp.DeepEqual(increment(t, "test-user"), scoreResponse{Username: "test-user", Score: 6, Rank: 1, Players: 2}))
 	})
 
 	t.Run("new user starts at 1", func(t *testing.T) {
-		assert.Check(t, cmp.DeepEqual(increment(t, "new-user"), scoreResponse{Username: "new-user", Score: 1}))
-		assert.Check(t, cmp.DeepEqual(increment(t, "new-user"), scoreResponse{Username: "new-user", Score: 2}))
+		// Scores are now 6, 2 and 1, then 6, 2 and 2, a tie with bystander.
+		assert.Check(t, cmp.DeepEqual(increment(t, "new-user"), scoreResponse{Username: "new-user", Score: 1, Rank: 3, Players: 3}))
+		assert.Check(t, cmp.DeepEqual(increment(t, "new-user"), scoreResponse{Username: "new-user", Score: 2, Rank: 2, Players: 3}))
 	})
 
 	t.Run("other users are untouched", func(t *testing.T) {
