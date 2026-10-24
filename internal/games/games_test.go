@@ -57,6 +57,7 @@ func TestPokemon_Round(t *testing.T) {
 	ctx := testcontext.Background()
 	names := []string{"bulbasaur", "ivysaur", "venusaur", "charmander", "charmeleon", "charizard"}
 	p := NewPokemon(newFakePokeAPI(t, names...).URL)
+	p.shiny = func() bool { return false }
 
 	for range 50 {
 		round, err := p.Round(ctx)
@@ -71,9 +72,54 @@ func TestPokemon_Round(t *testing.T) {
 		}
 
 		id := slices.Index(names, round.Answer) + 1
+		assert.Check(t, cmp.Equal(round.ID, id))
 		assert.Check(t, cmp.Equal(round.Image,
 			fmt.Sprintf("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/%d.png", id)))
+		assert.Check(t, !round.Shiny)
+		assert.Check(t, cmp.Equal(round.Points, 1))
 	}
+}
+
+func TestPokemon_ShinyRound(t *testing.T) {
+	p := NewPokemon(newFakePokeAPI(t, "bulbasaur", "ivysaur", "venusaur", "charmander").URL)
+	p.shiny = func() bool { return true }
+
+	round, err := p.Round(testcontext.Background())
+	assert.NilError(t, err)
+	assert.Check(t, round.Shiny)
+	assert.Check(t, cmp.Equal(round.Points, ShinyPoints))
+	assert.Check(t, cmp.Equal(round.Image,
+		fmt.Sprintf("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/%d.png", round.ID)))
+}
+
+// The real odds should give both kinds of round. 3000 rounds with no shiny
+// at 1 in 50 has a probability of about 1e-27.
+func TestPokemon_ShinyOdds(t *testing.T) {
+	ctx := testcontext.Background()
+	p := NewPokemon(newFakePokeAPI(t, "bulbasaur", "ivysaur", "venusaur", "charmander").URL)
+
+	shiny := 0
+	for range 3000 {
+		round, err := p.Round(ctx)
+		assert.NilError(t, err)
+		if round.Shiny {
+			shiny++
+		}
+	}
+	assert.Check(t, shiny > 0 && shiny < 300, "got %d shiny rounds out of 3000", shiny)
+}
+
+func TestPokemon_Size(t *testing.T) {
+	api := newFakePokeAPI(t, "bulbasaur", "ivysaur", "venusaur", "charmander", "charmeleon")
+	p := NewPokemon(api.URL)
+
+	n, err := p.Size(testcontext.Background())
+	assert.NilError(t, err)
+	assert.Check(t, cmp.Equal(n, 5))
+
+	_, err = p.Round(testcontext.Background())
+	assert.NilError(t, err)
+	assert.Check(t, cmp.Equal(api.requests.Load(), int32(1)), "Size and Round should share the cached list")
 }
 
 // Every species, including the first, should be able to come up.

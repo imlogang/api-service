@@ -411,6 +411,28 @@ func TestAPI_IncrementScoreHandler(t *testing.T) {
 		assert.Equal(t, f.score(t, "bystander"), 2)
 	})
 
+	t.Run("points", func(t *testing.T) {
+		w := f.do(t, "POST", "/api/private/increment_score",
+			requestBody{TableName: "pokemon_scores", User: "bystander", Points: new(3)})
+		assert.Equal(t, w.Code, 200)
+		assert.Check(t, cmp.Equal(decodeInto[scoreResponse](t, w).Score, 5))
+		// And for a new user.
+		w = f.do(t, "POST", "/api/private/increment_score",
+			requestBody{TableName: "pokemon_scores", User: "shiny-hunter", Points: new(3)})
+		assert.Equal(t, w.Code, 200)
+		assert.Check(t, cmp.Equal(decodeInto[scoreResponse](t, w).Score, 3))
+	})
+
+	t.Run("points below 1", func(t *testing.T) {
+		for _, p := range []int{0, -2} {
+			w := f.do(t, "POST", "/api/private/increment_score",
+				requestBody{TableName: "pokemon_scores", User: "test-user", Points: new(p)})
+			assert.Equal(t, w.Code, 400)
+			assert.Check(t, cmp.Contains(decode(t, w).Error, "points must be at least 1"))
+		}
+		assert.Equal(t, f.score(t, "test-user"), 6)
+	})
+
 	t.Run("missing username", func(t *testing.T) {
 		w := f.do(t, "POST", "/api/private/increment_score", requestBody{TableName: "pokemon_scores"})
 		assert.Equal(t, w.Code, 400)
@@ -445,10 +467,81 @@ func TestAPI_IncrementScoreHandler_Concurrent(t *testing.T) {
 
 type stubGame struct {
 	round games.Round
+	size  int
 	err   error
 }
 
 func (s stubGame) Round(context.Context) (games.Round, error) { return s.round, s.err }
+func (s stubGame) Size(context.Context) (int, error)          { return s.size, s.err }
+
+func TestAPI_Collection(t *testing.T) {
+	t.Parallel()
+	f := newFixture(t)
+	f.api.games = map[string]games.Game{
+		"pokemon": stubGame{size: 1025},
+		"broken":  stubGame{err: errors.New("pokeapi is down")},
+	}
+
+	collect := func(t *testing.T, username string, id int, shiny bool) collectionResponse {
+		t.Helper()
+		w := f.do(t, "POST", "/api/private/add_to_collection",
+			collectRequest{Game: "pokemon", Username: username, ID: id, Shiny: shiny})
+		assert.Equal(t, w.Code, 200)
+		return decodeInto[collectionResponse](t, w)
+	}
+	get := func(t *testing.T, query string) *httptest.ResponseRecorder {
+		t.Helper()
+		return f.do(t, "GET", "/api/private/get_collection?"+query, nil)
+	}
+
+	t.Run("empty", func(t *testing.T) {
+		w := get(t, "game=pokemon&username=ash")
+		assert.Equal(t, w.Code, 200)
+		assert.Check(t, cmp.DeepEqual(decodeInto[collectionResponse](t, w),
+			collectionResponse{Username: "ash", Game: "pokemon", Total: 1025}))
+	})
+
+	t.Run("add", func(t *testing.T) {
+		assert.Check(t, cmp.DeepEqual(collect(t, "ash", 25, false),
+			collectionResponse{Username: "ash", Game: "pokemon", New: true, Caught: 1, Total: 1025}))
+		assert.Check(t, cmp.DeepEqual(collect(t, "ash", 25, false),
+			collectionResponse{Username: "ash", Game: "pokemon", Caught: 1, Total: 1025}))
+		assert.Check(t, cmp.DeepEqual(collect(t, "ash", 1, true),
+			collectionResponse{Username: "ash", Game: "pokemon", New: true, Caught: 2, ShinyCaught: 1, Total: 1025}))
+	})
+
+	t.Run("get", func(t *testing.T) {
+		w := get(t, "game=pokemon&username=ash")
+		assert.Equal(t, w.Code, 200)
+		assert.Check(t, cmp.DeepEqual(decodeInto[collectionResponse](t, w),
+			collectionResponse{Username: "ash", Game: "pokemon", Caught: 2, ShinyCaught: 1, Total: 1025}))
+	})
+
+	t.Run("bad requests", func(t *testing.T) {
+		for name, req := range map[string]collectRequest{
+			"no game":      {Username: "ash", ID: 1},
+			"no username":  {Game: "pokemon", ID: 1},
+			"no id":        {Game: "pokemon", Username: "ash"},
+			"unknown game": {Game: "tetris", Username: "ash", ID: 1},
+		} {
+			t.Run(name, func(t *testing.T) {
+				w := f.do(t, "POST", "/api/private/add_to_collection", req)
+				assert.Equal(t, w.Code, 400)
+			})
+		}
+		for _, q := range []string{"username=ash", "game=pokemon", "game=tetris&username=ash"} {
+			t.Run(q, func(t *testing.T) {
+				assert.Equal(t, get(t, q).Code, 400)
+			})
+		}
+	})
+
+	t.Run("game error", func(t *testing.T) {
+		w := get(t, "game=broken&username=ash")
+		assert.Equal(t, w.Code, 500)
+		assert.Check(t, cmp.Contains(decode(t, w).Error, "pokeapi is down"))
+	})
+}
 
 func TestAPI_GetRoundHandler(t *testing.T) {
 	t.Parallel()
@@ -456,8 +549,10 @@ func TestAPI_GetRoundHandler(t *testing.T) {
 	assert.NilError(t, err)
 	round := games.Round{
 		Answer:  "meltan",
+		ID:      808,
 		Options: []string{"pikachu", "meltan", "eevee", "mew"},
 		Image:   "https://example.com/808.png",
+		Points:  1,
 	}
 	a.games = map[string]games.Game{
 		"pokemon": stubGame{round: round},
@@ -474,7 +569,7 @@ func TestAPI_GetRoundHandler(t *testing.T) {
 	t.Run("fields are flat", func(t *testing.T) {
 		w := f.do(t, "GET", "/api/private/get_round?game=pokemon", nil)
 		assert.Equal(t, strings.TrimSpace(w.Body.String()),
-			`{"game":"pokemon","answer":"meltan","options":["pikachu","meltan","eevee","mew"],"image":"https://example.com/808.png"}`)
+			`{"game":"pokemon","answer":"meltan","id":808,"options":["pikachu","meltan","eevee","mew"],"image":"https://example.com/808.png","shiny":false,"points":1}`)
 	})
 
 	t.Run("missing game", func(t *testing.T) {
@@ -504,6 +599,7 @@ func TestAPI_MalformedBodies(t *testing.T) {
 	for _, route := range []string{
 		"POST /api/private/increment_score",
 		"POST /api/private/update_user_score",
+		"POST /api/private/add_to_collection",
 	} {
 		for name, body := range map[string]string{
 			"empty":      "",

@@ -148,17 +148,23 @@ func (s *Store) UpdateScoreForUser(tableName string, username string, score int,
 	return "the score for the user has been updated", nil
 }
 
-// IncrementScore adds one point to the user's score in a single statement,
+// ErrBadPoints is returned when incrementing by less than 1 point.
+var ErrBadPoints = errors.New("points must be at least 1")
+
+// IncrementScore adds points to the user's score in a single statement,
 // creating the user if needed, and returns the new score.
-func (s *Store) IncrementScore(ctx context.Context, tableName string, username string) (int, error) {
+func (s *Store) IncrementScore(ctx context.Context, tableName string, username string, points int) (int, error) {
 	if tableName == "" || username == "" {
 		return 0, fmt.Errorf("tablename: %s and username: %s must not be empty", tableName, username)
 	}
-	sql := fmt.Sprintf(`INSERT INTO %s AS t ("username", "score") VALUES ($1, 1)
-		ON CONFLICT ("username") DO UPDATE SET "score" = COALESCE(t."score", 0) + 1
+	if points < 1 {
+		return 0, fmt.Errorf("%w: %d", ErrBadPoints, points)
+	}
+	sql := fmt.Sprintf(`INSERT INTO %s AS t ("username", "score") VALUES ($1, $2)
+		ON CONFLICT ("username") DO UPDATE SET "score" = COALESCE(t."score", 0) + EXCLUDED."score"
 		RETURNING "score"`, ident(tableName))
 	var score int
-	err := s.pool.QueryRow(ctx, sql, username).Scan(&score)
+	err := s.pool.QueryRow(ctx, sql, username, points).Scan(&score)
 	if err != nil {
 		return 0, fmt.Errorf("there was an error incrementing the users score. %s", err)
 	}
@@ -220,4 +226,46 @@ func (s *Store) GetLeaderboard(tableName string, ctx context.Context) ([]Leaderb
 		return nil, fmt.Errorf("error reading leaderboard rows: %s", err)
 	}
 	return leaderboard, nil
+}
+
+// Collection is how much of a game's collection a user has.
+type Collection struct {
+	// Caught is how many different items the user has, Shiny how many of
+	// those they've caught shiny.
+	Caught int
+	Shiny  int
+}
+
+// AddToCollection records that the user caught item in game and reports
+// whether it's new to them. Catching a shiny one marks the entry shiny for
+// good; catching a normal one afterwards doesn't undo that.
+func (s *Store) AddToCollection(ctx context.Context, game string, username string, item int, shiny bool) (bool, error) {
+	if game == "" || username == "" {
+		return false, fmt.Errorf("game: %s and username: %s must not be empty", game, username)
+	}
+	// xmax is 0 only on a row this statement inserted rather than updated.
+	sql := `INSERT INTO collections AS c ("game", "username", "item_id", "shiny") VALUES ($1, $2, $3, $4)
+		ON CONFLICT ("game", "username", "item_id") DO UPDATE SET "shiny" = c."shiny" OR EXCLUDED."shiny"
+		RETURNING (xmax = 0)`
+	var added bool
+	err := s.pool.QueryRow(ctx, sql, game, username, item, shiny).Scan(&added)
+	if err != nil {
+		return false, fmt.Errorf("there was an error adding to the users collection. %s", err)
+	}
+	return added, nil
+}
+
+// GetCollection counts what the user has collected in game.
+func (s *Store) GetCollection(ctx context.Context, game string, username string) (Collection, error) {
+	if game == "" || username == "" {
+		return Collection{}, fmt.Errorf("game: %s and username: %s must not be empty", game, username)
+	}
+	sql := `SELECT COUNT(*), COUNT(*) FILTER (WHERE "shiny") FROM collections
+		WHERE "game" = $1 AND "username" = $2`
+	var c Collection
+	err := s.pool.QueryRow(ctx, sql, game, username).Scan(&c.Caught, &c.Shiny)
+	if err != nil {
+		return Collection{}, fmt.Errorf("there was an error reading the users collection. %s", err)
+	}
+	return c, nil
 }
