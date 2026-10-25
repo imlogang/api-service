@@ -20,6 +20,7 @@ func TestMigrate_FreshDatabase(t *testing.T) {
 	assert.Check(t, cmp.DeepEqual(applied, []string{
 		"00001_create_pokemon_scores.sql",
 		"00002_unique_pokemon_scores_username.sql",
+		"00003_create_collections.sql",
 	}))
 
 	t.Run("running again applies nothing", func(t *testing.T) {
@@ -70,7 +71,7 @@ func testMigrateKeepsExistingTable(t *testing.T, schema string) {
 
 	applied, err := store.Migrate(ctx)
 	assert.NilError(t, err)
-	assert.Check(t, cmp.Len(applied, 2))
+	assert.Check(t, cmp.Len(applied, 3))
 
 	var total int
 	err = fix.AdminDB.GetContext(ctx, &total, `SELECT SUM(score) FROM pokemon_scores`)

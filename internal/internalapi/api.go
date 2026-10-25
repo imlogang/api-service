@@ -17,6 +17,8 @@ type requestBody struct {
 	// Score is a pointer so that leaving it out is an error, not a reset to 0.
 	Score  *int   `json:"score"`
 	Column string `json:"column"`
+	// Points is how much increment_score adds. It defaults to 1.
+	Points *int `json:"points"`
 }
 
 type returnBody struct {
@@ -36,6 +38,25 @@ type scoreResponse struct {
 
 type leaderboardResponse struct {
 	Leaderboard []db.LeaderboardEntry `json:"leaderboard"`
+}
+
+type collectRequest struct {
+	Game     string `json:"game"`
+	Username string `json:"username"`
+	ID       int    `json:"id"`
+	Shiny    bool   `json:"shiny"`
+}
+
+type collectionResponse struct {
+	Username string `json:"username"`
+	Game     string `json:"game"`
+	// New is set by add_to_collection when the item wasn't in the
+	// collection before.
+	New         bool `json:"new,omitempty"`
+	Caught      int  `json:"caught"`
+	ShinyCaught int  `json:"shiny_caught"`
+	// Total is how many items the game has, so Caught == Total is complete.
+	Total int `json:"total"`
 }
 
 type roundResponse struct {
@@ -147,8 +168,8 @@ func (a *API) LeaderboardHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, leaderboardResponse{Leaderboard: leaderboard})
 }
 
-// IncrementScoreHandler adds one point to a user's score atomically and
-// returns the new score.
+// IncrementScoreHandler adds points (1 unless given) to a user's score
+// atomically and returns the new score.
 func (a *API) IncrementScoreHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	var requestBody requestBody
@@ -165,7 +186,15 @@ func (a *API) IncrementScoreHandler(c *gin.Context) {
 		return
 	}
 
-	score, err := a.store.IncrementScore(ctx, requestBody.TableName, requestBody.User)
+	points := 1
+	if requestBody.Points != nil {
+		points = *requestBody.Points
+	}
+	score, err := a.store.IncrementScore(ctx, requestBody.TableName, requestBody.User, points)
+	if errors.Is(err, db.ErrBadPoints) {
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
+		return
+	}
 	if err != nil {
 		o11y.AddFieldToTrace(ctx, "db-error", err)
 		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
@@ -203,4 +232,90 @@ func (a *API) GetRoundHandler(c *gin.Context) {
 	}
 	o11y.AddFieldToTrace(ctx, "answer", round.Answer)
 	c.JSON(http.StatusOK, roundResponse{Game: name, Round: round})
+}
+
+// AddToCollectionHandler records that a user guessed a round's answer, and
+// returns how much of the game's collection they now have.
+func (a *API) AddToCollectionHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	var req collectRequest
+	err := c.BindJSON(&req)
+	ctx, span := o11y.StartSpan(ctx, "AddToCollectionHandler")
+	defer o11y.End(span, &err)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
+		return
+	}
+	if req.Game == "" || req.Username == "" || req.ID == 0 {
+		c.JSON(http.StatusBadRequest, returnBody{Error: "game, username and id required"})
+		return
+	}
+	game, ok := a.games[req.Game]
+	if !ok {
+		c.JSON(http.StatusBadRequest, returnBody{Error: fmt.Sprintf("unknown game %q", req.Game)})
+		return
+	}
+	o11y.AddFieldToTrace(ctx, "game", req.Game)
+	o11y.AddFieldToTrace(ctx, "item_id", req.ID)
+
+	added, err := a.store.AddToCollection(ctx, req.Game, req.Username, req.ID, req.Shiny)
+	if err != nil {
+		o11y.AddFieldToTrace(ctx, "db-error", err)
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
+		return
+	}
+	resp, err := a.collection(ctx, game, req.Game, req.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
+		return
+	}
+	resp.New = added
+	c.JSON(http.StatusOK, resp)
+}
+
+// GetCollectionHandler returns how much of a game's collection a user has.
+func (a *API) GetCollectionHandler(c *gin.Context) {
+	ctx := c.Request.Context()
+	name := c.Query("game")
+	username := c.Query("username")
+
+	var err error
+	ctx, span := o11y.StartSpan(ctx, "GetCollectionHandler")
+	defer o11y.End(span, &err)
+
+	if name == "" || username == "" {
+		c.JSON(http.StatusBadRequest, returnBody{Error: "game and username required"})
+		return
+	}
+	game, ok := a.games[name]
+	if !ok {
+		c.JSON(http.StatusBadRequest, returnBody{Error: fmt.Sprintf("unknown game %q", name)})
+		return
+	}
+
+	resp, err := a.collection(ctx, game, name, username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+func (a *API) collection(ctx context.Context, game games.Game, name, username string) (collectionResponse, error) {
+	col, err := a.store.GetCollection(ctx, name, username)
+	if err != nil {
+		return collectionResponse{}, err
+	}
+	total, err := game.Size(ctx)
+	if err != nil {
+		return collectionResponse{}, err
+	}
+	return collectionResponse{
+		Username:    username,
+		Game:        name,
+		Caught:      col.Caught,
+		ShinyCaught: col.Shiny,
+		Total:       total,
+	}, nil
 }

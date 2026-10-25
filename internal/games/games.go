@@ -21,19 +21,32 @@ const OptionCount = 4
 // Round is one question of a guessing game. Options holds the answer and
 // OptionCount-1 wrong choices, all different, in random order.
 type Round struct {
-	Answer  string   `json:"answer"`
+	Answer string `json:"answer"`
+	// ID identifies the answer within the game, for collections.
+	ID      int      `json:"id"`
 	Options []string `json:"options"`
 	Image   string   `json:"image"`
+	// Shiny rounds are rare and worth ShinyPoints instead of 1.
+	Shiny  bool `json:"shiny"`
+	Points int  `json:"points"`
 }
 
 // Game is a guessing game the API can serve rounds for.
 type Game interface {
 	Round(ctx context.Context) (Round, error)
+	// Size is how many different answers the game has, which is how many
+	// entries a complete collection holds.
+	Size(ctx context.Context) (int, error)
 }
 
 const (
 	DefaultPokeAPIURL = "https://pokeapi.co/api/v2"
 	spriteURL         = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/%d.png"
+	shinySpriteURL    = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/%d.png"
+
+	// ShinyOdds is the chance of a shiny round: 1 in ShinyOdds.
+	ShinyOdds   = 50
+	ShinyPoints = 3
 )
 
 type species struct {
@@ -47,6 +60,9 @@ type Pokemon struct {
 	baseURL string
 	client  *http.Client
 
+	// shiny decides whether a round is shiny. Tests replace it.
+	shiny func() bool
+
 	mu      sync.Mutex
 	species []species
 }
@@ -55,6 +71,7 @@ func NewPokemon(baseURL string) *Pokemon {
 	return &Pokemon{
 		baseURL: strings.TrimSuffix(baseURL, "/"),
 		client:  &http.Client{Timeout: 10 * time.Second},
+		shiny:   func() bool { return rand.IntN(ShinyOdds) == 0 },
 	}
 }
 
@@ -75,11 +92,28 @@ func (p *Pokemon) Round(ctx context.Context) (Round, error) {
 	}
 	rand.Shuffle(len(options), func(i, j int) { options[i], options[j] = options[j], options[i] })
 
-	return Round{
+	round := Round{
 		Answer:  answer.name,
+		ID:      answer.id,
 		Options: options,
 		Image:   fmt.Sprintf(spriteURL, answer.id),
-	}, nil
+		Points:  1,
+	}
+	if p.shiny() {
+		round.Shiny = true
+		round.Image = fmt.Sprintf(shinySpriteURL, answer.id)
+		round.Points = ShinyPoints
+	}
+	return round, nil
+}
+
+// Size is the number of species, fetching the list on first use.
+func (p *Pokemon) Size(ctx context.Context) (int, error) {
+	all, err := p.allSpecies(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return len(all), nil
 }
 
 // allSpecies returns the cached species list, fetching it on first use. A

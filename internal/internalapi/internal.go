@@ -34,6 +34,8 @@ func New(ctx context.Context, store *db.Store) (*API, error) {
 	r.POST("/api/private/increment_score", a.IncrementScoreHandler)
 	r.GET("/api/private/get_round", a.GetRoundHandler)
 	r.GET("/api/private/leaderboard", a.LeaderboardHandler)
+	r.POST("/api/private/add_to_collection", a.AddToCollectionHandler)
+	r.GET("/api/private/get_collection", a.GetCollectionHandler)
 
 	return a, nil
 }
