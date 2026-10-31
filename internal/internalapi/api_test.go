@@ -347,27 +347,23 @@ func TestAPI_LeaderboardHandler_Empty(t *testing.T) {
 	assert.Equal(t, w.Code, 400)
 }
 
-// Callers can only reach the scores table of a game the API serves, whether
-// they name the game or, like older bots, the table.
+// Callers can only reach the scores table of a game the API serves.
 func TestAPI_OnlyGameTablesAreReachable(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
 	f.addUser(t, "test-user", 4)
-	const evil = "pokemon_scores; DROP TABLE pokemon_scores"
 
-	for name, query := range map[string]url.Values{
-		"sql as table":       {"tablename": {evil}},
-		"sql as game":        {"game": {evil}},
-		"unknown game":       {"game": {"trivia"}},
-		"table not a game":   {"tablename": {"collections"}},
-		"table name as game": {"game": {"pokemon_scores"}},
+	for name, game := range map[string]string{
+		"sql":           "pokemon_scores; DROP TABLE pokemon_scores",
+		"unknown game":  "trivia",
+		"a table name":  "pokemon_scores",
+		"another table": "collections",
 	} {
 		t.Run(name, func(t *testing.T) {
-			w := f.do(t, "GET", "/api/private/leaderboard?"+query.Encode(), nil)
+			w := f.do(t, "GET", "/api/private/leaderboard?"+url.Values{"game": {game}}.Encode(), nil)
 			assert.Equal(t, w.Code, 400)
 
-			query.Set("username", "test-user")
-			w = f.do(t, "GET", "/api/private/get_current_score?"+query.Encode(), nil)
+			w = f.do(t, "GET", scoreURL(game, "test-user"), nil)
 			assert.Equal(t, w.Code, 400)
 		})
 	}
@@ -375,33 +371,28 @@ func TestAPI_OnlyGameTablesAreReachable(t *testing.T) {
 	assert.Check(t, cmp.DeepEqual(f.leaderboard(t), []db.LeaderboardEntry{{Username: "test-user", Score: 4}}))
 }
 
-// Bots from before game send the table name instead. That keeps working for
-// a known game's table until every bot sends game.
-func TestAPI_OldTableNameStillWorks(t *testing.T) {
+// The table name bots used to send is ignored now; without a game the
+// request is refused rather than guessing.
+func TestAPI_TableNameIsNoLongerAccepted(t *testing.T) {
 	t.Parallel()
 	f := newFixture(t)
 	f.addUser(t, "ash", 2)
 
-	w := f.do(t, "GET", "/api/private/get_current_score?tablename=pokemon_scores&username=ash", nil)
-	assert.Equal(t, w.Code, 200)
-	assert.Check(t, cmp.Equal(decodeInto[scoreResponse](t, w).Score, 2))
+	for _, target := range []string{
+		"/api/private/get_current_score?tablename=pokemon_scores&username=ash",
+		"/api/private/leaderboard?tablename=pokemon_scores",
+	} {
+		w := f.do(t, "GET", target, nil)
+		assert.Equal(t, w.Code, 400)
+		assert.Check(t, cmp.Equal(decode(t, w).Error, "game required"))
+	}
 
-	w = f.do(t, "POST", "/api/private/increment_score", requestBody{TableName: "pokemon_scores", User: "ash"})
-	assert.Equal(t, w.Code, 200)
-	assert.Check(t, cmp.Equal(decodeInto[scoreResponse](t, w).Score, 3))
-
-	w = f.do(t, "POST", "/api/private/update_user_score",
-		requestBody{TableName: "pokemon_scores", User: "ash", Score: new(7), Column: "score"})
-	assert.Equal(t, w.Code, 200)
-
-	w = f.do(t, "GET", "/api/private/leaderboard?tablename=pokemon_scores", nil)
-	assert.Equal(t, w.Code, 200)
-	assert.Check(t, cmp.DeepEqual(decodeInto[leaderboardResponse](t, w).Leaderboard, []db.LeaderboardEntry{{Username: "ash", Score: 7}}))
-
-	t.Run("game wins over table", func(t *testing.T) {
-		w := f.do(t, "GET", "/api/private/get_current_score?game=pokemon&tablename=collections&username=ash", nil)
-		assert.Equal(t, w.Code, 200)
-	})
+	for _, route := range []string{"/api/private/increment_score", "/api/private/update_user_score"} {
+		w := f.do(t, "POST", route, map[string]any{"table_name": "pokemon_scores", "username": "ash", "score": 9, "column": "score"})
+		assert.Equal(t, w.Code, 400)
+		assert.Check(t, cmp.Equal(decode(t, w).Error, "game required"))
+	}
+	assert.Equal(t, f.score(t, "ash"), 2)
 }
 
 func TestAPI_RemovedEndpoints(t *testing.T) {
@@ -653,8 +644,8 @@ func TestAPI_MalformedBodies(t *testing.T) {
 		for name, body := range map[string]string{
 			"empty":      "",
 			"not json":   "username=test-user",
-			"wrong type": `{"table_name": "pokemon_scores", "username": 7}`,
-			"truncated":  `{"table_name": "pokemon_scores", "username": "test-`,
+			"wrong type": `{"game": "pokemon", "username": 7}`,
+			"truncated":  `{"game": "pokemon", "username": "test-`,
 		} {
 			t.Run(route+" "+name, func(t *testing.T) {
 				method, path, _ := strings.Cut(route, " ")

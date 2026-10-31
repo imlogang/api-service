@@ -13,9 +13,7 @@ import (
 
 type requestBody struct {
 	Game string `json:"game"`
-	// TableName is the old way to pick the game; see scoreTable.
-	TableName string `json:"table_name"`
-	User      string `json:"username"`
+	User string `json:"username"`
 	// Score is a pointer so that leaving it out is an error, not a reset to 0.
 	Score  *int   `json:"score"`
 	Column string `json:"column"`
@@ -70,26 +68,16 @@ func (a *API) HelloWorldHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, returnBody{Hello: "Hello world!"})
 }
 
-// scoreTable returns the scores table for a game. Callers name the game;
-// table names from callers are only still accepted, for bots that predate
-// game, if they are a known game's table. Either way only tables that belong
-// to a game the API serves can be reached.
-func (a *API) scoreTable(game, tableName string) (string, error) {
-	if game != "" {
-		if _, ok := a.games[game]; !ok {
-			return "", fmt.Errorf("unknown game %q", game)
-		}
-		return game + "_scores", nil
+// scoreTable returns the scores table for a game the API serves, so callers
+// can only ever reach those tables.
+func (a *API) scoreTable(game string) (string, error) {
+	if game == "" {
+		return "", errors.New("game required")
 	}
-	if tableName != "" {
-		for name := range a.games {
-			if tableName == name+"_scores" {
-				return tableName, nil
-			}
-		}
-		return "", fmt.Errorf("unknown table %q", tableName)
+	if _, ok := a.games[game]; !ok {
+		return "", fmt.Errorf("unknown game %q", game)
 	}
-	return "", errors.New("game required")
+	return game + "_scores", nil
 }
 
 func (a *API) GetScoreHandler(c *gin.Context) {
@@ -100,7 +88,7 @@ func (a *API) GetScoreHandler(c *gin.Context) {
 	var err error
 	ctx, getScoreHandlerSpan := o11y.StartSpan(ctx, "GetScoreHandler")
 	defer o11y.End(getScoreHandlerSpan, &err)
-	tableName, err := a.scoreTable(c.Query("game"), c.Query("tablename"))
+	tableName, err := a.scoreTable(c.Query("game"))
 	o11y.AddFieldToTrace(ctx, "table_name", tableName)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
@@ -150,7 +138,7 @@ func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, returnBody{Error: "score required"})
 		return
 	}
-	tableName, err := a.scoreTable(requestBody.Game, requestBody.TableName)
+	tableName, err := a.scoreTable(requestBody.Game)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
@@ -181,7 +169,7 @@ func (a *API) LeaderboardHandler(c *gin.Context) {
 	ctx, leaderboardHandlerSpan := o11y.StartSpan(ctx, "LeaderboardHandler")
 	defer o11y.End(leaderboardHandlerSpan, &err)
 
-	tableName, err := a.scoreTable(c.Query("game"), c.Query("tablename"))
+	tableName, err := a.scoreTable(c.Query("game"))
 	o11y.AddFieldToTrace(ctx, "table_name", tableName)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
@@ -213,7 +201,7 @@ func (a *API) IncrementScoreHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
 	}
-	tableName, err := a.scoreTable(requestBody.Game, requestBody.TableName)
+	tableName, err := a.scoreTable(requestBody.Game)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
