@@ -12,6 +12,8 @@ import (
 )
 
 type requestBody struct {
+	Game string `json:"game"`
+	// TableName is the old way to pick the game; see scoreTable.
 	TableName string `json:"table_name"`
 	User      string `json:"username"`
 	// Score is a pointer so that leaving it out is an error, not a reset to 0.
@@ -68,19 +70,44 @@ func (a *API) HelloWorldHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, returnBody{Hello: "Hello world!"})
 }
 
+// scoreTable returns the scores table for a game. Callers name the game;
+// table names from callers are only still accepted, for bots that predate
+// game, if they are a known game's table. Either way only tables that belong
+// to a game the API serves can be reached.
+func (a *API) scoreTable(game, tableName string) (string, error) {
+	if game != "" {
+		if _, ok := a.games[game]; !ok {
+			return "", fmt.Errorf("unknown game %q", game)
+		}
+		return game + "_scores", nil
+	}
+	if tableName != "" {
+		for name := range a.games {
+			if tableName == name+"_scores" {
+				return tableName, nil
+			}
+		}
+		return "", fmt.Errorf("unknown table %q", tableName)
+	}
+	return "", errors.New("game required")
+}
+
 func (a *API) GetScoreHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	tableName := c.Query("tablename")
 	username := c.Query("username")
 
 	var err error
 	ctx, getScoreHandlerSpan := o11y.StartSpan(ctx, "GetScoreHandler")
 	defer o11y.End(getScoreHandlerSpan, &err)
-	if tableName == "" || username == "" {
-		o11y.AddFieldToTrace(ctx, "table_name", tableName)
-		o11y.AddFieldToTrace(ctx, "username", username)
-		c.JSON(http.StatusBadRequest, returnBody{Error: "tablename or username required"})
+	tableName, err := a.scoreTable(c.Query("game"), c.Query("tablename"))
+	o11y.AddFieldToTrace(ctx, "table_name", tableName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
+		return
+	}
+	if username == "" {
+		c.JSON(http.StatusBadRequest, returnBody{Error: "username required"})
 		return
 	}
 
@@ -123,8 +150,13 @@ func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, returnBody{Error: "score required"})
 		return
 	}
+	tableName, err := a.scoreTable(requestBody.Game, requestBody.TableName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
+		return
+	}
 
-	sql, err := a.store.UpdateScoreForUser(requestBody.TableName, requestBody.User, *requestBody.Score, requestBody.Column, ctx)
+	sql, err := a.store.UpdateScoreForUser(tableName, requestBody.User, *requestBody.Score, requestBody.Column, ctx)
 	if errors.Is(err, db.ErrColumnNotUpdatable) || errors.Is(err, db.ErrNegativeScore) {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
@@ -144,15 +176,15 @@ func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
 
 func (a *API) LeaderboardHandler(c *gin.Context) {
 	ctx := c.Request.Context()
-	tableName := c.Query("tablename")
 
 	var err error
 	ctx, leaderboardHandlerSpan := o11y.StartSpan(ctx, "LeaderboardHandler")
 	defer o11y.End(leaderboardHandlerSpan, &err)
 
-	if tableName == "" {
-		o11y.AddFieldToTrace(ctx, "table-name", tableName)
-		c.JSON(http.StatusBadRequest, returnBody{Error: "tablename required"})
+	tableName, err := a.scoreTable(c.Query("game"), c.Query("tablename"))
+	o11y.AddFieldToTrace(ctx, "table_name", tableName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
 	}
 
@@ -181,8 +213,13 @@ func (a *API) IncrementScoreHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
 	}
-	if requestBody.TableName == "" || requestBody.User == "" {
-		c.JSON(http.StatusBadRequest, returnBody{Error: "table_name and username required"})
+	tableName, err := a.scoreTable(requestBody.Game, requestBody.TableName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
+		return
+	}
+	if requestBody.User == "" {
+		c.JSON(http.StatusBadRequest, returnBody{Error: "username required"})
 		return
 	}
 
@@ -190,7 +227,7 @@ func (a *API) IncrementScoreHandler(c *gin.Context) {
 	if requestBody.Points != nil {
 		points = *requestBody.Points
 	}
-	score, err := a.store.IncrementScore(ctx, requestBody.TableName, requestBody.User, points)
+	score, err := a.store.IncrementScore(ctx, tableName, requestBody.User, points)
 	if errors.Is(err, db.ErrBadPoints) {
 		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
 		return
@@ -201,7 +238,7 @@ func (a *API) IncrementScoreHandler(c *gin.Context) {
 		return
 	}
 	o11y.AddFieldToTrace(ctx, "score", score)
-	c.JSON(http.StatusOK, a.withStanding(ctx, requestBody.TableName, scoreResponse{Username: requestBody.User, Score: score}))
+	c.JSON(http.StatusOK, a.withStanding(ctx, tableName, scoreResponse{Username: requestBody.User, Score: score}))
 }
 
 // GetRoundHandler returns one round of the requested game: the answer, the
