@@ -22,7 +22,7 @@ executors:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
           POSTGRES_DB: beemoviebot
-      - image: postgres:18.7
+      - image: postgres:19.0
         user: "postgres"
         environment:
           POSTGRES_DB: beemoviebot
