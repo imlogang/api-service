@@ -14,17 +14,13 @@ import (
 type requestBody struct {
 	Game string `json:"game"`
 	User string `json:"username"`
-	// Score is a pointer so that leaving it out is an error, not a reset to 0.
-	Score  *int   `json:"score"`
-	Column string `json:"column"`
 	// Points is how much increment_score adds. It defaults to 1.
 	Points *int `json:"points"`
 }
 
 type returnBody struct {
-	Hello        string `json:"hello,omitempty"`
-	UpdateAnswer string `json:"update_answer,omitempty"`
-	Error        string `json:"error,omitempty"`
+	Hello string `json:"hello,omitempty"`
+	Error string `json:"error,omitempty"`
 }
 
 type scoreResponse struct {
@@ -119,47 +115,6 @@ func (a *API) withStanding(ctx context.Context, tableName string, resp scoreResp
 	}
 	resp.Rank, resp.Players = st.Rank, st.Players
 	return resp
-}
-
-func (a *API) UpdateScoreForUserHandler(c *gin.Context) {
-	ctx := c.Request.Context()
-	var requestBody requestBody
-	err := c.BindJSON(&requestBody)
-	ctx, updateScoreForUserHandler := o11y.StartSpan(ctx, "UpdateScoreForUserHandler")
-	defer o11y.End(updateScoreForUserHandler, &err)
-
-	if err != nil {
-		o11y.AddFieldToTrace(ctx, "update-score-for-user", requestBody)
-		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
-		return
-	}
-
-	if requestBody.Score == nil {
-		c.JSON(http.StatusBadRequest, returnBody{Error: "score required"})
-		return
-	}
-	tableName, err := a.scoreTable(requestBody.Game)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
-		return
-	}
-
-	sql, err := a.store.UpdateScoreForUser(tableName, requestBody.User, *requestBody.Score, requestBody.Column, ctx)
-	if errors.Is(err, db.ErrColumnNotUpdatable) || errors.Is(err, db.ErrNegativeScore) {
-		c.JSON(http.StatusBadRequest, returnBody{Error: err.Error()})
-		return
-	}
-	if errors.Is(err, db.ErrUserNotFound) {
-		c.JSON(http.StatusNotFound, returnBody{Error: err.Error()})
-		return
-	}
-	if err != nil {
-		o11y.AddFieldToTrace(ctx, "db-error", err)
-		c.JSON(http.StatusInternalServerError, returnBody{Error: err.Error()})
-		return
-	}
-	c.Header("Content-Type", "application/json")
-	c.JSON(http.StatusOK, returnBody{UpdateAnswer: sql})
 }
 
 func (a *API) LeaderboardHandler(c *gin.Context) {
