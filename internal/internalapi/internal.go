@@ -30,7 +30,6 @@ func New(ctx context.Context, store *db.Store) (*API, error) {
 	o11y.Log(ctx, "New Internal router is called")
 	r.GET("/api/private/hello", a.HelloWorldHandler)
 	r.GET("/api/private/get_current_score", a.GetScoreHandler)
-	r.POST("/api/private/update_user_score", a.UpdateScoreForUserHandler)
 	r.POST("/api/private/increment_score", a.IncrementScoreHandler)
 	r.GET("/api/private/get_round", a.GetRoundHandler)
 	r.GET("/api/private/leaderboard", a.LeaderboardHandler)

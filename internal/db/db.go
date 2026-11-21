@@ -43,17 +43,8 @@ func (c *Config) connString() string {
 	return u.String()
 }
 
-// ErrColumnNotUpdatable is returned when a caller tries to update a column
-// other than the ones in updatableColumns.
-var ErrColumnNotUpdatable = errors.New("column cannot be updated")
-
-// ErrUserNotFound is returned when updating a user that isn't in the table.
+// ErrUserNotFound is returned when looking up a user that isn't in the table.
 var ErrUserNotFound = errors.New("user not found")
-
-// ErrNegativeScore is returned when setting a score below zero.
-var ErrNegativeScore = errors.New("score must not be negative")
-
-var updatableColumns = map[string]bool{"score": true}
 
 // ident quotes a table or column name so it can be safely placed in SQL.
 // Postgres can't take identifiers as $N parameters, so this is used instead.
@@ -123,29 +114,6 @@ func (s *Store) createUser(ctx context.Context, tableName string, username strin
 		ON CONFLICT ("username") DO NOTHING`, ident(tableName))
 	_, err := s.pool.Exec(ctx, sql, username)
 	return err
-}
-
-// UpdateScoreForUser sets a user's score, for example to correct or reset it.
-func (s *Store) UpdateScoreForUser(tableName string, username string, score int, column string, ctx context.Context) (string, error) {
-	if tableName == "" || username == "" || column == "" {
-		return "", fmt.Errorf("tablename: %s, username: %s, or column: %s must not be empty", tableName, username, column)
-	}
-	if !updatableColumns[column] {
-		return "", fmt.Errorf("%w: %s", ErrColumnNotUpdatable, column)
-	}
-	if score < 0 {
-		return "", fmt.Errorf("%w: %d", ErrNegativeScore, score)
-	}
-	sql := fmt.Sprintf(`UPDATE %s SET %s = $1 WHERE "username" = $2`, ident(tableName), ident(column))
-	tag, err := s.pool.Exec(ctx, sql, score, username)
-	if err != nil {
-		return "", fmt.Errorf("there was an error updating the users score. %s", err)
-	}
-	if tag.RowsAffected() == 0 {
-		return "", fmt.Errorf("%w: %s", ErrUserNotFound, username)
-	}
-
-	return "the score for the user has been updated", nil
 }
 
 // ErrBadPoints is returned when incrementing by less than 1 point.
