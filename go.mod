@@ -9,7 +9,7 @@ require (
 	github.com/circleci/ex v1.0.25455-2efc35c
 	github.com/gin-gonic/gin v1.12.0
 	github.com/jackc/pgx/v5 v5.13.0
-	github.com/pressly/goose/v3 v3.30.1
+	github.com/pressly/goose/v3 v3.30.2
 	go.opentelemetry.io/otel v1.47.0
 	gotest.tools/v3 v3.5.2
 )
